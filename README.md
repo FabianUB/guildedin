@@ -37,11 +37,13 @@ npm run dev
 
 ### Database
 ```bash
-# Setup PostgreSQL database 'guildedin_db'
-# Copy .env.example to .env and configure
+# SQLite database created automatically - no setup needed!
 cd backend  
 uv run alembic upgrade head
 ```
+
+**Development**: Uses SQLite (no setup required)  
+**Production**: Uses PostgreSQL (set `ENVIRONMENT=production` in `.env`)
 
 ## 🎨 Corporate RPG Classes
 
