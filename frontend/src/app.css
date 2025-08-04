@@ -1,0 +1,40 @@
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&display=swap');
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.font-rpg {
+  font-family: 'Cinzel', serif;
+}
+
+/* Custom RPG-themed components */
+@layer components {
+  .btn-primary {
+    @apply bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold px-6 py-3 rounded-lg transition-all duration-200 transform hover:scale-105 shadow-lg;
+  }
+  
+  .btn-secondary {
+    @apply bg-gray-700 hover:bg-gray-600 text-white font-semibold px-6 py-3 rounded-lg transition-all duration-200 border border-gray-600 hover:border-gray-500;
+  }
+  
+  .card-rpg {
+    @apply bg-gray-800/50 backdrop-blur-sm rounded-lg border border-purple-500/30 p-6 hover:border-purple-400/50 transition-all duration-300;
+  }
+  
+  .guild-card {
+    @apply card-rpg hover:transform hover:scale-105 cursor-pointer;
+  }
+  
+  .adventurer-card {
+    @apply card-rpg hover:shadow-xl hover:shadow-purple-500/20;
+  }
+  
+  .dungeon-card {
+    @apply card-rpg bg-gradient-to-br from-gray-800/60 to-gray-900/60 hover:from-gray-700/60 hover:to-gray-800/60;
+  }
+}
