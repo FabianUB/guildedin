@@ -62,8 +62,8 @@ Think: "Monster Rancher meets LinkedIn" NOT "LinkedIn meets RPG"
 - `Equipment` - Corporate "tools" and certifications
 - `Facility` - Guild upgrades (training rooms, etc.)
 
-### Frontend Structure  
-- **Feed Dashboard** - Pixel-art LinkedIn-style activity feed
+### Frontend Structure (HTMX + FastAPI)
+- **Guild Dashboard** - Pixel-art LinkedIn-style activity feed with real-time updates
 - **Adventurer Profiles** - 16-bit LinkedIn profile layout for characters
 - **Guild Pages** - Pixelated company page style for guilds
 - **Recruitment Hub** - Retro LinkedIn job/talent search interface
@@ -94,11 +94,8 @@ Think: "Monster Rancher meets LinkedIn" NOT "LinkedIn meets RPG"
 
 ## Development Commands
 ```bash
-# Backend (SQLite database will be created automatically)
-cd backend && uv run python scripts/dev.py
-
-# Frontend  
-cd frontend && npm run dev
+# Backend + Frontend (HTMX served by FastAPI)
+cd backend && uv run python main.py
 
 # Database migrations (SQLite for development)
 cd backend && uv run alembic upgrade head
@@ -115,11 +112,12 @@ cd backend && uv run alembic upgrade head
 ## Current Status
 - [x] Project structure setup
 - [x] FastAPI backend with uv
-- [x] SvelteKit frontend with Tailwind  
+- [x] **HTMX frontend with pixel-art styling**
 - [x] **Database models restructured for Monster Rancher gameplay**
 - [x] **Complete database schema with migrations**
+- [x] **LinkedIn-inspired guild dashboard with HTMX interactivity**
 - [ ] Bot adventurer generation system
-- [ ] Pixel-art LinkedIn UI components (profiles, feed, recruitment)
+- [ ] Connect HTMX frontend to database models
 - [ ] Custom pixel-art RPG UI (dungeons, training, base management)
 - [ ] Core gameplay mechanics
 - [ ] Loot and equipment system
