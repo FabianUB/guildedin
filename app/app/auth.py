@@ -127,7 +127,7 @@ def create_player(
         hashed_password=hashed_password,
         display_name=display_name,
         corporate_class=CorporateClass(corporate_class),
-        current_position=f"Aspiring {corporate_class.replace('_', ' ').title()}",
+        current_position=f"Aspiring {corporate_class.replace('_', ' ').title().replace('Manager', 'Manager')}",
         professional_summary=f"Eager professional ready to build the next great guild!",
         location="Global Network"
     )

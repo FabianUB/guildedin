@@ -5,16 +5,10 @@ from enum import Enum as PyEnum
 from .database import Base
 
 class CorporateClass(PyEnum):
-    HR_MANAGER = "hr_manager"                    # Summoner
-    CONFLICT_STRATEGIST = "conflict_strategist"  # Fighter  
-    ETHICS_OFFICER = "ethics_officer"            # Paladin
-    PR_MANAGER = "pr_manager"                    # Bard
-    SUSTAINABILITY_OFFICER = "sustainability_officer"  # Druid
-    ASSET_MANAGER = "asset_manager"              # Rogue/Thief
-    WELLNESS_COORDINATOR = "wellness_coordinator"  # Healer
-    STAKEHOLDER_MANAGER = "stakeholder_manager"  # Warlock
-    INNOVATION_DIRECTOR = "innovation_director"  # Artificer
-    PERFORMANCE_COACH = "performance_coach"      # Monk
+    HR_MANAGER = "hr_manager"                    # Discount on hiring and salaries
+    PR_MANAGER = "pr_manager"                    # Easier to gain share price and reputation
+    ASSET_MANAGER = "asset_manager"              # More interest on saved gold and exp
+    WELLNESS_MANAGER = "wellness_manager"        # Adventurers have more HP and heal more
 
 class Player(Base):
     __tablename__ = "players"
