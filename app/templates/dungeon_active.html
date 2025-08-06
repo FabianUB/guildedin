@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Active Expeditions - GuildedIn</title>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&family=Press+Start+2P&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/htmx.org@1.9.10/dist/htmx.min.js"></script>
+    <style>
+        * {
+            image-rendering: pixelated;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: crisp-edges;
+            box-sizing: border-box;
+        }
+        
+        body { 
+            font-family: 'VT323', 'Courier New', monospace;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+            color: #f0f4e8;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            font-size: 16px;
+        }
+
+        /* Top Navigation */
+        .top-nav {
+            background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+            border-bottom: 3px solid #f59e0b;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+
+        .nav-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex: 1;
+        }
+
+        .brand-section {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .logo {
+            font-size: 24px;
+            text-shadow: 2px 2px 0 #92400e;
+        }
+
+        .brand-name {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 14px;
+            color: #fbbf24;
+            text-shadow: 2px 2px 0 #92400e;
+            letter-spacing: 1px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 16px;
+            margin-left: 20px;
+        }
+
+        .nav-link {
+            color: #d1d5db;
+            text-decoration: none;
+            font-size: 14px;
+            padding: 8px 12px;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+            text-shadow: 1px 1px 0 rgba(0,0,0,0.5);
+        }
+
+        .nav-link:hover {
+            color: #fbbf24;
+            background: rgba(245, 158, 11, 0.1);
+        }
+
+        .nav-link.active {
+            color: #fbbf24;
+            background: rgba(245, 158, 11, 0.2);
+            border-bottom: 2px solid #f59e0b;
+        }
+
+        .calendar-display {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .game-date {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 10px;
+            color: #fbbf24;
+            text-shadow: 1px 1px 0 #92400e;
+        }
+
+        .game-phase {
+            font-size: 12px;
+            color: #9ca3af;
+            text-shadow: 1px 1px 0 rgba(0,0,0,0.5);
+        }
+
+        .nav-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .nav-action {
+            background: linear-gradient(135deg, #374151, #1f2937);
+            border: 2px solid #4b5563;
+            color: #f0f4e8;
+            padding: 8px 12px;
+            cursor: pointer;
+            font-family: 'VT323', monospace;
+            font-size: 14px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.1s ease;
+            min-width: 60px;
+        }
+
+        .nav-action:hover:not(.disabled) {
+            background: linear-gradient(135deg, #4b5563, #374151);
+            transform: translate(-1px, -1px);
+            box-shadow: 2px 2px 0 #1f2937;
+        }
+
+        .nav-action.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .action-icon {
+            font-size: 16px;
+        }
+
+        .action-name {
+            font-size: 10px;
+        }
+
+        /* Main Container */
+        .dungeon-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 20px;
+            padding: 20px;
+        }
+
+        /* Main Dungeon View */
+        .dungeon-main {
+            background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+            border: 2px solid #374151;
+            border-top: 4px solid #3b82f6;
+            padding: 20px;
+            position: relative;
+        }
+
+        .dungeon-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid #374151;
+        }
+
+        .dungeon-title {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 12px;
+            color: #60a5fa;
+            text-shadow: 1px 1px 0 #1e40af;
+        }
+
+        .actions-display {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 4px;
+        }
+
+        .actions-remaining {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 10px;
+            color: #10b981;
+        }
+
+        .daily-limit {
+            font-size: 12px;
+            color: #9ca3af;
+        }
+
+        /* Room Grid */
+        .room-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 12px;
+            margin: 20px 0;
+        }
+
+        .room-cell {
+            aspect-ratio: 1;
+            background: linear-gradient(135deg, #374151, #1f2937);
+            border: 2px solid #4b5563;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .room-cell.current {
+            border-color: #fbbf24;
+            background: linear-gradient(135deg, #92400e, #451a03);
+            box-shadow: 0 0 20px rgba(251, 191, 36, 0.5);
+        }
+
+        .room-cell.cleared {
+            border-color: #10b981;
+            background: linear-gradient(135deg, #065f46, #064e3b);
+        }
+
+        .room-cell.mining {
+            border-color: #f59e0b;
+            background: linear-gradient(135deg, #92400e, #78350f);
+            animation: pulse 2s infinite;
+        }
+
+        .room-cell.boss {
+            border-color: #ef4444;
+            background: linear-gradient(135deg, #7f1d1d, #450a0a);
+            border-width: 3px;
+        }
+
+        .room-number {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 8px;
+            color: #d1d5db;
+            margin-bottom: 4px;
+        }
+
+        .room-icon {
+            font-size: 24px;
+            margin-bottom: 4px;
+        }
+
+        .room-status {
+            font-size: 10px;
+            color: #9ca3af;
+            text-align: center;
+        }
+
+        /* Control Panel */
+        .control-panel {
+            background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+            border: 2px solid #374151;
+            border-top: 4px solid #10b981;
+            padding: 16px;
+            height: fit-content;
+        }
+
+        .section-title {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 10px;
+            color: #fbbf24;
+            text-shadow: 1px 1px 0 #92400e;
+            margin: 0 0 16px 0;
+        }
+
+        .action-button {
+            width: 100%;
+            background: linear-gradient(135deg, #065f46, #047857);
+            border: 2px solid #10b981;
+            color: #d1fae5;
+            font-family: 'VT323', monospace;
+            font-size: 14px;
+            padding: 12px;
+            cursor: pointer;
+            margin-bottom: 12px;
+            transition: all 0.1s ease;
+            text-shadow: 1px 1px 0 #064e3b;
+        }
+
+        .action-button:hover:not(:disabled) {
+            background: linear-gradient(135deg, #047857, #065f46);
+            transform: translate(-1px, -1px);
+            box-shadow: 2px 2px 0 #064e3b;
+        }
+
+        .action-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background: #374151;
+            border-color: #4b5563;
+            color: #9ca3af;
+        }
+
+        .danger-button {
+            background: linear-gradient(135deg, #7f1d1d, #450a0a);
+            border-color: #ef4444;
+            color: #fecaca;
+        }
+
+        .danger-button:hover:not(:disabled) {
+            background: linear-gradient(135deg, #991b1b, #7f1d1d);
+        }
+
+        .party-status {
+            background: linear-gradient(135deg, #1f2937, #111827);
+            border: 2px solid #374151;
+            padding: 12px;
+            margin-bottom: 16px;
+            border-radius: 4px;
+        }
+
+        .party-member {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 4px 0;
+            font-size: 12px;
+        }
+
+        .health-bar {
+            width: 60px;
+            height: 8px;
+            background: #374151;
+            border: 1px solid #4b5563;
+            position: relative;
+        }
+
+        .health-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ef4444, #f59e0b, #10b981);
+            transition: width 0.3s ease;
+        }
+
+        /* Real-time updates */
+        .mining-progress {
+            position: absolute;
+            bottom: 4px;
+            left: 4px;
+            right: 4px;
+            height: 4px;
+            background: #374151;
+            border: 1px solid #4b5563;
+        }
+
+        .mining-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #f59e0b, #fbbf24);
+            transition: width 0.5s ease;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .combat-modal {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .combat-content {
+            background: linear-gradient(135deg, #1f2937, #111827);
+            border: 3px solid #f59e0b;
+            padding: 24px;
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .combat-title {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 12px;
+            color: #fbbf24;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .no-dungeon {
+            text-align: center;
+            padding: 40px;
+            color: #9ca3af;
+        }
+
+        .no-dungeon h2 {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 14px;
+            color: #60a5fa;
+            margin-bottom: 20px;
+        }
+
+        .cta-button {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            border: 2px solid #60a5fa;
+            color: #dbeafe;
+            font-family: 'VT323', monospace;
+            font-size: 16px;
+            padding: 12px 24px;
+            cursor: pointer;
+            transition: all 0.1s ease;
+            margin-top: 20px;
+        }
+
+        .cta-button:hover {
+            background: linear-gradient(135deg, #1d4ed8, #3b82f6);
+            transform: translate(-1px, -1px);
+            box-shadow: 2px 2px 0 #1e40af;
+        }
+    </style>
+</head>
+<body>
+    <!-- Top Navigation Bar -->
+    <nav class="top-nav">
+        <div class="nav-left">
+            <div class="brand-section">
+                <div class="logo">🏰</div>
+                <div class="brand-name">GuildedIn</div>
+            </div>
+            <div class="nav-links">
+                <a href="/dashboard" class="nav-link" hx-get="/dashboard" hx-target="body" hx-swap="innerHTML">Home</a>
+                <a href="#" class="nav-link">Guilds</a>
+                <a href="#" class="nav-link active">Dungeons</a>
+                <a href="#" class="nav-link">Profile</a>
+            </div>
+            <div class="calendar-display">
+                <span class="game-date">Day 42 • Q4 2024</span>
+                <span class="game-phase">Expedition Phase</span>
+            </div>
+        </div>
+        <div class="nav-actions">
+            <button class="nav-action" hx-post="/api/actions/recruit" hx-target="#guild-resources" hx-swap="outerHTML">
+                <span class="action-icon">👥</span>
+                <span class="action-name">Recruit</span>
+            </button>
+            <button class="nav-action" hx-post="/api/actions/train" hx-target="#guild-resources" hx-swap="outerHTML">
+                <span class="action-icon">💪</span>
+                <span class="action-name">Train</span>
+            </button>
+            <button class="nav-action" hx-get="/dungeons/marketplace" hx-target="body" hx-swap="innerHTML">
+                <span class="action-icon">🏪</span>
+                <span class="action-name">Market</span>
+            </button>
+            <button class="nav-action" hx-post="/api/actions/upgrade" hx-target="#guild-resources" hx-swap="outerHTML">
+                <span class="action-icon">🔧</span>
+                <span class="action-name">Upgrade</span>
+            </button>
+            <button class="nav-action disabled">
+                <span class="action-icon">⚡</span>
+                <span class="action-name">3/5 Left</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <div class="dungeon-container">
+        <!-- Center: Dungeon Map and Status -->
+        <div class="dungeon-main" id="dungeon-main">
+            <div class="dungeon-header">
+                <h1 class="dungeon-title">⛰️ Himalayan Crystal Caves</h1>
+                <div class="actions-display">
+                    <div class="actions-remaining">⚡ 3 Actions Left</div>
+                    <div class="daily-limit">Daily limit: 5 actions</div>
+                </div>
+            </div>
+
+            <!-- Room Grid -->
+            <div class="room-grid" id="room-grid">
+                <!-- Entrance -->
+                <div class="room-cell current" hx-post="/api/dungeons/advance" hx-vals='{"room": 1}' hx-target="#dungeon-main">
+                    <div class="room-number">START</div>
+                    <div class="room-icon">🚪</div>
+                    <div class="room-status">Current Position</div>
+                </div>
+
+                <!-- Room 1 -->
+                <div class="room-cell" hx-post="/api/dungeons/combat" hx-vals='{"room": 1}' hx-target="#combat-modal" hx-swap="innerHTML">
+                    <div class="room-number">1</div>
+                    <div class="room-icon">⚔️</div>
+                    <div class="room-status">Combat Ready</div>
+                </div>
+
+                <!-- Room 2 - Cleared with Mining -->
+                <div class="room-cell cleared mining">
+                    <div class="room-number">2</div>
+                    <div class="room-icon">⛏️</div>
+                    <div class="room-status">Mining 67%</div>
+                    <div class="mining-progress">
+                        <div class="mining-fill" style="width: 67%;"></div>
+                    </div>
+                </div>
+
+                <!-- Rooms 3-9 (Unexplored) -->
+                <div class="room-cell">
+                    <div class="room-number">3</div>
+                    <div class="room-icon">❓</div>
+                    <div class="room-status">Unexplored</div>
+                </div>
+
+                <div class="room-cell">
+                    <div class="room-number">4</div>
+                    <div class="room-icon">❓</div>
+                    <div class="room-status">Unexplored</div>
+                </div>
+
+                <div class="room-cell">
+                    <div class="room-number">5</div>
+                    <div class="room-icon">❓</div>
+                    <div class="room-status">Unexplored</div>
+                </div>
+
+                <div class="room-cell">
+                    <div class="room-number">6</div>
+                    <div class="room-icon">❓</div>
+                    <div class="room-status">Unexplored</div>
+                </div>
+
+                <div class="room-cell">
+                    <div class="room-number">7</div>
+                    <div class="room-icon">❓</div>
+                    <div class="room-status">Unexplored</div>
+                </div>
+
+                <div class="room-cell">
+                    <div class="room-number">8</div>
+                    <div class="room-icon">❓</div>
+                    <div class="room-status">Unexplored</div>
+                </div>
+
+                <div class="room-cell">
+                    <div class="room-number">9</div>
+                    <div class="room-icon">❓</div>
+                    <div class="room-status">Unexplored</div>
+                </div>
+
+                <!-- Boss Room -->
+                <div class="room-cell boss">
+                    <div class="room-number">10</div>
+                    <div class="room-icon">👹</div>
+                    <div class="room-status">Frost Titan</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Panel: Controls and Party Status -->
+        <div class="control-panel">
+            <h2 class="section-title">⚡ Dungeon Actions</h2>
+            
+            <!-- Party Status -->
+            <div class="party-status" id="party-status">
+                <h3 style="font-family: 'Press Start 2P', monospace; font-size: 9px; color: #10b981; margin: 0 0 8px 0;">Party Status</h3>
+                
+                <div class="party-member">
+                    <span>Sarah (Healer)</span>
+                    <div class="health-bar">
+                        <div class="health-fill" style="width: 85%;"></div>
+                    </div>
+                </div>
+                
+                <div class="party-member">
+                    <span>Mike (Fighter)</span>
+                    <div class="health-bar">
+                        <div class="health-fill" style="width: 92%;"></div>
+                    </div>
+                </div>
+                
+                <div class="party-member">
+                    <span>Lisa (Paladin)</span>
+                    <div class="health-bar">
+                        <div class="health-fill" style="width: 78%;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <button class="action-button" hx-post="/api/dungeons/combat" hx-vals='{"action_cost": 1}' hx-target="#combat-modal" hx-swap="innerHTML">
+                ⚔️ Start Combat (1 Action)
+            </button>
+            
+            <button class="action-button" hx-post="/api/dungeons/advance" hx-vals='{"action_cost": 1}' hx-target="#dungeon-main" hx-swap="innerHTML">
+                ➡️ Advance Room (1 Action)
+            </button>
+            
+            <button class="action-button" hx-post="/api/dungeons/start-mining" hx-vals='{"action_cost": 2}' hx-target="#room-grid" hx-swap="innerHTML">
+                ⛏️ Start Mining (2 Actions)
+            </button>
+            
+            <button class="action-button" hx-post="/api/dungeons/rest" hx-vals='{"action_cost": 1}' hx-target="#party-status" hx-swap="innerHTML">
+                🛡️ Rest & Heal (1 Action)
+            </button>
+            
+            <button class="action-button danger-button" hx-post="/api/dungeons/retreat" hx-target="#dungeon-main" hx-swap="innerHTML">
+                🏃 Retreat to Surface (Free)
+            </button>
+
+            <!-- Resource Summary -->
+            <div class="party-status" style="margin-top: 20px;">
+                <h3 style="font-family: 'Press Start 2P', monospace; font-size: 9px; color: #fbbf24; margin: 0 0 8px 0;">Run Summary</h3>
+                <div style="font-size: 12px; line-height: 1.4;">
+                    💰 Gold Earned: 2,850<br>
+                    ✨ EXP Gained: 1,420<br>
+                    🏆 Rooms Cleared: 2/10<br>
+                    ⛏️ Mining Ops: 1 active
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Combat Modal (hidden by default) -->
+    <div id="combat-modal" style="display: none;"></div>
+
+</body>
+</html>

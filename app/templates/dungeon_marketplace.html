@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dungeon Marketplace - GuildedIn</title>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&family=Press+Start+2P&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/htmx.org@1.9.10/dist/htmx.min.js"></script>
+    <style>
+        * {
+            image-rendering: pixelated;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: crisp-edges;
+            box-sizing: border-box;
+        }
+        
+        body { 
+            font-family: 'VT323', 'Courier New', monospace;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+            color: #f0f4e8;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            font-size: 16px;
+        }
+
+        /* Top Navigation */
+        .top-nav {
+            background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+            border-bottom: 3px solid #f59e0b;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+
+        .nav-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex: 1;
+        }
+
+        .brand-section {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .logo {
+            font-size: 24px;
+            text-shadow: 2px 2px 0 #92400e;
+        }
+
+        .brand-name {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 14px;
+            color: #fbbf24;
+            text-shadow: 2px 2px 0 #92400e;
+            letter-spacing: 1px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 16px;
+            margin-left: 20px;
+        }
+
+        .nav-link {
+            color: #d1d5db;
+            text-decoration: none;
+            font-size: 14px;
+            padding: 8px 12px;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+            text-shadow: 1px 1px 0 rgba(0,0,0,0.5);
+        }
+
+        .nav-link:hover {
+            color: #fbbf24;
+            background: rgba(245, 158, 11, 0.1);
+        }
+
+        .nav-link.active {
+            color: #fbbf24;
+            background: rgba(245, 158, 11, 0.2);
+            border-bottom: 2px solid #f59e0b;
+        }
+
+        .calendar-display {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .game-date {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 10px;
+            color: #fbbf24;
+            text-shadow: 1px 1px 0 #92400e;
+        }
+
+        .game-phase {
+            font-size: 12px;
+            color: #9ca3af;
+            text-shadow: 1px 1px 0 rgba(0,0,0,0.5);
+        }
+
+        .nav-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .nav-action {
+            background: linear-gradient(135deg, #374151, #1f2937);
+            border: 2px solid #4b5563;
+            color: #f0f4e8;
+            padding: 8px 12px;
+            cursor: pointer;
+            font-family: 'VT323', monospace;
+            font-size: 14px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.1s ease;
+            min-width: 60px;
+        }
+
+        .nav-action:hover:not(.disabled) {
+            background: linear-gradient(135deg, #4b5563, #374151);
+            transform: translate(-1px, -1px);
+            box-shadow: 2px 2px 0 #1f2937;
+        }
+
+        .nav-action.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .action-icon {
+            font-size: 16px;
+        }
+
+        .action-name {
+            font-size: 10px;
+        }
+
+        /* Main Container */
+        .marketplace-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 1fr 320px;
+            gap: 20px;
+        }
+
+        /* World Map Section */
+        .world-map-section {
+            background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+            border: 2px solid #374151;
+            border-top: 4px solid #3b82f6;
+            padding: 20px;
+        }
+
+        .section-title {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 12px;
+            color: #60a5fa;
+            text-shadow: 1px 1px 0 #1e40af;
+            margin: 0 0 20px 0;
+        }
+
+        .world-map {
+            position: relative;
+            width: 100%;
+            height: 500px;
+            background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #1e40af 100%);
+            border: 3px solid #374151;
+            overflow: hidden;
+        }
+
+        /* Simple continents using CSS shapes */
+        .continent {
+            position: absolute;
+            background: #065f46;
+            border: 2px solid #10b981;
+        }
+
+        .north-america {
+            top: 80px;
+            left: 120px;
+            width: 180px;
+            height: 200px;
+            clip-path: polygon(20% 0%, 80% 15%, 100% 50%, 85% 85%, 60% 100%, 15% 90%, 0% 60%, 10% 20%);
+        }
+
+        .south-america {
+            top: 280px;
+            left: 160px;
+            width: 100px;
+            height: 180px;
+            clip-path: polygon(40% 0%, 80% 20%, 100% 60%, 70% 100%, 20% 95%, 0% 70%, 30% 40%);
+        }
+
+        .europe {
+            top: 60px;
+            left: 380px;
+            width: 120px;
+            height: 100px;
+            clip-path: polygon(0% 40%, 30% 0%, 100% 20%, 90% 80%, 50% 100%, 10% 70%);
+        }
+
+        .africa {
+            top: 160px;
+            left: 400px;
+            width: 140px;
+            height: 220px;
+            clip-path: polygon(30% 0%, 80% 10%, 100% 40%, 90% 80%, 60% 100%, 20% 90%, 0% 60%, 15% 20%);
+        }
+
+        .asia {
+            top: 40px;
+            left: 520px;
+            width: 280px;
+            height: 200px;
+            clip-path: polygon(0% 30%, 20% 0%, 80% 5%, 100% 40%, 95% 80%, 70% 100%, 30% 90%, 5% 60%);
+        }
+
+        .australia {
+            top: 320px;
+            left: 680px;
+            width: 100px;
+            height: 80px;
+            clip-path: polygon(0% 40%, 40% 0%, 100% 30%, 80% 100%, 20% 80%);
+        }
+
+        /* Dungeon Pins */
+        .dungeon-pin {
+            position: absolute;
+            width: 32px;
+            height: 32px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            z-index: 10;
+            transition: all 0.2s ease;
+            animation: pulse 2s infinite;
+        }
+
+        .dungeon-pin:hover {
+            transform: scale(1.2);
+            z-index: 20;
+        }
+
+        @keyframes pulse {
+            0%, 100% { 
+                box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.7);
+            }
+            50% { 
+                box-shadow: 0 0 0 10px rgba(251, 191, 36, 0);
+            }
+        }
+
+        /* Tokyo - Japan */
+        .pin-tokyo {
+            top: 140px;
+            left: 750px;
+        }
+
+        /* Nepal - Himalayas */
+        .pin-nepal {
+            top: 160px;
+            left: 650px;
+        }
+
+        /* Bermuda - Atlantic */
+        .pin-bermuda {
+            top: 200px;
+            left: 240px;
+        }
+
+        /* Dungeon Tooltip */
+        .dungeon-tooltip {
+            position: absolute;
+            background: linear-gradient(135deg, #1f2937, #111827);
+            border: 2px solid #f59e0b;
+            padding: 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            white-space: nowrap;
+            z-index: 30;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+
+        .dungeon-pin:hover .dungeon-tooltip {
+            opacity: 1;
+        }
+
+        .tooltip-name {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 9px;
+            color: #fbbf24;
+            margin-bottom: 4px;
+        }
+
+        .tooltip-rank {
+            display: inline-block;
+            padding: 2px 6px;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 7px;
+            border-radius: 2px;
+            margin-bottom: 4px;
+        }
+
+        .rank-c { background: #10b981; color: #fff; }
+        .rank-b { background: #3b82f6; color: #fff; }
+        .rank-a { background: #a855f7; color: #fff; }
+
+        /* Sidebar */
+        .marketplace-sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .sidebar-section {
+            background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+            border: 2px solid #374151;
+            border-top: 4px solid #10b981;
+            padding: 16px;
+        }
+
+        .selected-dungeon {
+            border-top-color: #f59e0b;
+        }
+
+        .dungeon-details {
+            margin-top: 12px;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 1px solid #374151;
+            font-size: 12px;
+        }
+
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+
+        .detail-value {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 8px;
+            color: #10b981;
+        }
+
+        .bidding-section {
+            background: rgba(0,0,0,0.3);
+            border: 1px solid #374151;
+            padding: 12px;
+            margin-top: 12px;
+        }
+
+        .bidding-status {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 9px;
+            color: #f59e0b;
+            margin-bottom: 8px;
+        }
+
+        .bid-input {
+            width: 100%;
+            background: #374151;
+            border: 2px solid #4b5563;
+            color: #f0f4e8;
+            font-family: 'VT323', monospace;
+            font-size: 14px;
+            padding: 8px;
+            margin: 8px 0;
+        }
+
+        .bid-input:focus {
+            outline: none;
+            border-color: #f59e0b;
+        }
+
+        .bid-button {
+            width: 100%;
+            background: linear-gradient(135deg, #065f46, #047857);
+            border: 2px solid #10b981;
+            color: #d1fae5;
+            font-family: 'VT323', monospace;
+            font-size: 12px;
+            padding: 10px;
+            cursor: pointer;
+            transition: all 0.1s ease;
+        }
+
+        .bid-button:hover {
+            background: linear-gradient(135deg, #047857, #065f46);
+            transform: translate(-1px, -1px);
+            box-shadow: 2px 2px 0 #064e3b;
+        }
+
+        .guild-stats {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 0;
+            font-size: 12px;
+        }
+
+        .stat-value {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 9px;
+            color: #10b981;
+        }
+    </style>
+</head>
+<body>
+    <!-- Top Navigation Bar -->
+    <nav class="top-nav">
+        <div class="nav-left">
+            <div class="brand-section">
+                <div class="logo">🏰</div>
+                <div class="brand-name">GuildedIn</div>
+            </div>
+            <div class="nav-links">
+                <a href="/dashboard" class="nav-link" hx-get="/dashboard" hx-target="body" hx-swap="innerHTML">Home</a>
+                <a href="#" class="nav-link">Guilds</a>
+                <a href="#" class="nav-link active">Dungeons</a>
+                <a href="#" class="nav-link">Profile</a>
+            </div>
+            <div class="calendar-display">
+                <span class="game-date">Day 42 • Q4 2024</span>
+                <span class="game-phase">Marketplace Open</span>
+            </div>
+        </div>
+        <div class="nav-actions">
+            <button class="nav-action" hx-post="/api/actions/recruit" hx-target="#guild-resources" hx-swap="outerHTML">
+                <span class="action-icon">👥</span>
+                <span class="action-name">Recruit</span>
+            </button>
+            <button class="nav-action" hx-post="/api/actions/train" hx-target="#guild-resources" hx-swap="outerHTML">
+                <span class="action-icon">💪</span>
+                <span class="action-name">Train</span>
+            </button>
+            <button class="nav-action" hx-get="/dungeons/active" hx-target="body" hx-swap="innerHTML">
+                <span class="action-icon">⚔️</span>
+                <span class="action-name">Dungeon</span>
+            </button>
+            <button class="nav-action" hx-post="/api/actions/upgrade" hx-target="#guild-resources" hx-swap="outerHTML">
+                <span class="action-icon">🔧</span>
+                <span class="action-name">Upgrade</span>
+            </button>
+            <button class="nav-action disabled">
+                <span class="action-icon">⚡</span>
+                <span class="action-name">3/5 Left</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <div class="marketplace-container">
+        <!-- World Map Section -->
+        <main class="world-map-section">
+            <h1 class="section-title">🗺️ Global Dungeon Discoveries</h1>
+            
+            <div class="world-map">
+                <!-- Continents -->
+                <div class="continent north-america"></div>
+                <div class="continent south-america"></div>
+                <div class="continent europe"></div>
+                <div class="continent africa"></div>
+                <div class="continent asia"></div>
+                <div class="continent australia"></div>
+                
+                <!-- Dungeon Pins -->
+                <div class="dungeon-pin pin-tokyo" hx-get="/api/dungeons/details/1" hx-target="#selected-dungeon" hx-swap="innerHTML">
+                    🏛️
+                    <div class="dungeon-tooltip" style="top: -60px; left: -80px;">
+                        <div class="tooltip-name">Ancient Tokyo Ruins</div>
+                        <div class="tooltip-rank rank-c">C-RANK</div>
+                        <div>📍 Tokyo, Japan</div>
+                        <div>💰 High Bid: 1,200G</div>
+                    </div>
+                </div>
+                
+                <div class="dungeon-pin pin-nepal" hx-get="/api/dungeons/details/2" hx-target="#selected-dungeon" hx-swap="innerHTML">
+                    ⛰️
+                    <div class="dungeon-tooltip" style="top: -60px; left: -90px;">
+                        <div class="tooltip-name">Himalayan Crystal Caves</div>
+                        <div class="tooltip-rank rank-b">B-RANK</div>
+                        <div>📍 Nepal</div>
+                        <div>💰 High Bid: 2,800G</div>
+                    </div>
+                </div>
+                
+                <div class="dungeon-pin pin-bermuda" hx-get="/api/dungeons/details/3" hx-target="#selected-dungeon" hx-swap="innerHTML">
+                    🏖️
+                    <div class="dungeon-tooltip" style="top: -60px; left: -70px;">
+                        <div class="tooltip-name">Bermuda Portal</div>
+                        <div class="tooltip-rank rank-a">A-RANK</div>
+                        <div>📍 Atlantic Ocean</div>
+                        <div>💰 High Bid: 5,500G</div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Sidebar -->
+        <aside class="marketplace-sidebar">
+            <!-- Guild Stats -->
+            <div class="sidebar-section">
+                <h3 class="section-title">📊 Guild Status</h3>
+                <div class="guild-stats">
+                    <div class="stat-item">
+                        <span>💰 Available Gold:</span>
+                        <span class="stat-value">4,750G</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>🏆 Guild Rank:</span>
+                        <span class="stat-value rank-c">C</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>⚡ Actions Left:</span>
+                        <span class="stat-value">3/5</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>📈 Share Price:</span>
+                        <span class="stat-value">147.5G</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Selected Dungeon Details -->
+            <div class="sidebar-section selected-dungeon" id="selected-dungeon">
+                <h3 class="section-title">📍 Select a Dungeon</h3>
+                <p style="color: #9ca3af; font-size: 12px;">Click on a dungeon pin to view details and place bids.</p>
+            </div>
+        </aside>
+    </div>
+
+    <script>
+        // Simple script to handle dungeon selection
+        document.addEventListener('htmx:afterSwap', function(evt) {
+            if (evt.target.id === 'selected-dungeon') {
+                // Remove active class from all pins
+                document.querySelectorAll('.dungeon-pin').forEach(pin => {
+                    pin.style.transform = '';
+                });
+                // Add active styling to clicked pin
+                evt.detail.elt.style.transform = 'scale(1.2)';
+            }
+        });
+    </script>
+</body>
+</html>

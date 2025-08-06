@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dungeon Operations - GuildedIn</title>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&family=Press+Start+2P&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/htmx.org@1.9.10/dist/htmx.min.js"></script>
+    <script src="https://unpkg.com/htmx.org/dist/ext/sse.js"></script>
+    <style>
+        * {
+            image-rendering: pixelated;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: crisp-edges;
+            box-sizing: border-box;
+        }
+        
+        body { 
+            font-family: 'VT323', 'Courier New', monospace;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+            color: #f0f4e8;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            font-size: 16px;
+        }
+
+        .dungeon-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 350px 1fr 300px;
+            gap: 20px;
+        }
+
+        /* Dungeon Selection Panel */
+        .dungeon-selection {
+            background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+            border: 2px solid #374151;
+            border-top: 4px solid #f59e0b;
+            padding: 16px;
+            height: fit-content;
+        }
+
+        .section-title {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 10px;
+            color: #fbbf24;
+            text-shadow: 1px 1px 0 #92400e;
+            margin: 0 0 16px 0;
+        }
+
+        .dungeon-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .dungeon-item {
+            background: linear-gradient(135deg, #374151, #1f2937);
+            border: 2px solid #4b5563;
+            padding: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .dungeon-item:hover {
+            background: linear-gradient(135deg, #4b5563, #374151);
+            transform: translate(-1px, -1px);
+            box-shadow: 2px 2px 0 #1f2937;
+        }
+
+        .dungeon-item.active {
+            border-color: #f59e0b;
+            background: linear-gradient(135deg, #92400e, #451a03);
+        }
+
+        .dungeon-name {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 9px;
+            color: #fbbf24;
+            margin-bottom: 4px;
+        }
+
+        .dungeon-details {
+            font-size: 12px;
+            color: #d1d5db;
+            line-height: 1.4;
+        }
+
+        .rank-badge {
+            display: inline-block;
+            padding: 2px 6px;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 8px;
+            border-radius: 2px;
+        }
+
+        .rank-s { background: #fbbf24; color: #000; }
+        .rank-a { background: #a855f7; color: #fff; }
+        .rank-b { background: #3b82f6; color: #fff; }
+        .rank-c { background: #10b981; color: #fff; }
+        .rank-d { background: #f59e0b; color: #000; }
+        .rank-e { background: #ef4444; color: #fff; }
+
+        /* Main Dungeon View */
+        .dungeon-main {
+            background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+            border: 2px solid #374151;
+            border-top: 4px solid #3b82f6;
+            padding: 20px;
+            position: relative;
+        }
+
+        .dungeon-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid #374151;
+        }
+
+        .dungeon-title {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 12px;
+            color: #60a5fa;
+            text-shadow: 1px 1px 0 #1e40af;
+        }
+
+        .time-display {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 4px;
+        }
+
+        .time-remaining {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 10px;
+            color: #10b981;
+        }
+
+        .daily-limit {
+            font-size: 12px;
+            color: #9ca3af;
+        }
+
+        /* Room Grid */
+        .room-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 12px;
+            margin: 20px 0;
+        }
+
+        .room-cell {
+            aspect-ratio: 1;
+            background: linear-gradient(135deg, #374151, #1f2937);
+            border: 2px solid #4b5563;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .room-cell.current {
+            border-color: #fbbf24;
+            background: linear-gradient(135deg, #92400e, #451a03);
+            box-shadow: 0 0 20px rgba(251, 191, 36, 0.5);
+        }
+
+        .room-cell.cleared {
+            border-color: #10b981;
+            background: linear-gradient(135deg, #065f46, #064e3b);
+        }
+
+        .room-cell.mining {
+            border-color: #f59e0b;
+            background: linear-gradient(135deg, #92400e, #78350f);
+            animation: pulse 2s infinite;
+        }
+
+        .room-cell.boss {
+            border-color: #ef4444;
+            background: linear-gradient(135deg, #7f1d1d, #450a0a);
+            border-width: 3px;
+        }
+
+        .room-number {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 8px;
+            color: #d1d5db;
+            margin-bottom: 4px;
+        }
+
+        .room-icon {
+            font-size: 24px;
+            margin-bottom: 4px;
+        }
+
+        .room-status {
+            font-size: 10px;
+            color: #9ca3af;
+            text-align: center;
+        }
+
+        /* Control Panel */
+        .control-panel {
+            background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+            border: 2px solid #374151;
+            border-top: 4px solid #10b981;
+            padding: 16px;
+            height: fit-content;
+        }
+
+        .action-button {
+            width: 100%;
+            background: linear-gradient(135deg, #065f46, #047857);
+            border: 2px solid #10b981;
+            color: #d1fae5;
+            font-family: 'VT323', monospace;
+            font-size: 14px;
+            padding: 12px;
+            cursor: pointer;
+            margin-bottom: 12px;
+            transition: all 0.1s ease;
+            text-shadow: 1px 1px 0 #064e3b;
+        }
+
+        .action-button:hover:not(:disabled) {
+            background: linear-gradient(135deg, #047857, #065f46);
+            transform: translate(-1px, -1px);
+            box-shadow: 2px 2px 0 #064e3b;
+        }
+
+        .action-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background: #374151;
+            border-color: #4b5563;
+            color: #9ca3af;
+        }
+
+        .danger-button {
+            background: linear-gradient(135deg, #7f1d1d, #450a0a);
+            border-color: #ef4444;
+            color: #fecaca;
+        }
+
+        .danger-button:hover:not(:disabled) {
+            background: linear-gradient(135deg, #991b1b, #7f1d1d);
+        }
+
+        .party-status {
+            background: linear-gradient(135deg, #1f2937, #111827);
+            border: 2px solid #374151;
+            padding: 12px;
+            margin-bottom: 16px;
+            border-radius: 4px;
+        }
+
+        .party-member {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 4px 0;
+            font-size: 12px;
+        }
+
+        .health-bar {
+            width: 60px;
+            height: 8px;
+            background: #374151;
+            border: 1px solid #4b5563;
+            position: relative;
+        }
+
+        .health-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ef4444, #f59e0b, #10b981);
+            transition: width 0.3s ease;
+        }
+
+        /* Real-time updates */
+        .mining-progress {
+            position: absolute;
+            bottom: 4px;
+            left: 4px;
+            right: 4px;
+            height: 4px;
+            background: #374151;
+            border: 1px solid #4b5563;
+        }
+
+        .mining-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #f59e0b, #fbbf24);
+            transition: width 0.5s ease;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .combat-modal {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .combat-content {
+            background: linear-gradient(135deg, #1f2937, #111827);
+            border: 3px solid #f59e0b;
+            padding: 24px;
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .combat-title {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 12px;
+            color: #fbbf24;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .bidding-panel {
+            background: linear-gradient(135deg, #1f2937, #111827);
+            border: 2px solid #374151;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .bid-input {
+            width: 100%;
+            background: #374151;
+            border: 2px solid #4b5563;
+            color: #f0f4e8;
+            font-family: 'VT323', monospace;
+            font-size: 14px;
+            padding: 8px;
+            margin: 8px 0;
+        }
+
+        .bid-input:focus {
+            outline: none;
+            border-color: #f59e0b;
+        }
+    </style>
+</head>
+<body>
+    <div class="dungeon-container">
+        <!-- Left Panel: Available Dungeons -->
+        <div class="dungeon-selection">
+            <h2 class="section-title">🗺️ Available Dungeons</h2>
+            <div class="dungeon-list" id="dungeon-list" hx-get="/api/dungeons/available" hx-trigger="load, every 30s" hx-swap="innerHTML">
+                <!-- Dungeon list populated by HTMX -->
+                <div class="dungeon-item">
+                    <div class="dungeon-name">🏛️ Ancient Tokyo Ruins</div>
+                    <div class="dungeon-details">
+                        <span class="rank-badge rank-c">C</span> Tokyo, Japan<br>
+                        7 rooms • Boss: Cyber Shogun<br>
+                        Bidding closes: 3h 42m
+                    </div>
+                </div>
+                
+                <div class="dungeon-item active">
+                    <div class="dungeon-name">⛰️ Himalayan Crystal Caves</div>
+                    <div class="dungeon-details">
+                        <span class="rank-badge rank-b">B</span> Nepal<br>
+                        10 rooms • Boss: Frost Titan<br>
+                        <strong>Active Contract</strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bidding Panel -->
+            <div class="bidding-panel" id="bidding-panel">
+                <h3 class="section-title">💰 Place Bid</h3>
+                <input type="number" class="bid-input" placeholder="Enter gold amount" id="bid-amount">
+                <button class="action-button" hx-post="/api/dungeons/bid" hx-include="#bid-amount" hx-target="#bidding-panel">
+                    Submit Bid
+                </button>
+            </div>
+        </div>
+
+        <!-- Center: Dungeon Map and Status -->
+        <div class="dungeon-main" id="dungeon-main">
+            <div class="dungeon-header">
+                <h1 class="dungeon-title">⛰️ Himalayan Crystal Caves</h1>
+                <div class="time-display" hx-get="/api/dungeons/time-status" hx-trigger="every 60s" hx-swap="innerHTML">
+                    <div class="time-remaining">⏰ 4h 18m remaining</div>
+                    <div class="daily-limit">Daily: 6h 42m used / 8h limit</div>
+                </div>
+            </div>
+
+            <!-- Room Grid -->
+            <div class="room-grid" id="room-grid" hx-get="/api/dungeons/room-status" hx-trigger="every 15s" hx-swap="innerHTML">
+                <!-- Entrance -->
+                <div class="room-cell current" hx-post="/api/dungeons/advance" hx-vals='{"room": 1}' hx-target="#dungeon-main">
+                    <div class="room-number">START</div>
+                    <div class="room-icon">🚪</div>
+                    <div class="room-status">Entrance</div>
+                </div>
+
+                <!-- Room 1 -->
+                <div class="room-cell" hx-post="/api/dungeons/advance" hx-vals='{"room": 1}' hx-target="#dungeon-main">
+                    <div class="room-number">1</div>
+                    <div class="room-icon">⚔️</div>
+                    <div class="room-status">Combat Ready</div>
+                </div>
+
+                <!-- Room 2 - Cleared with Mining -->
+                <div class="room-cell cleared mining">
+                    <div class="room-number">2</div>
+                    <div class="room-icon">⛏️</div>
+                    <div class="room-status">Mining 67%</div>
+                    <div class="mining-progress">
+                        <div class="mining-fill" style="width: 67%;"></div>
+                    </div>
+                </div>
+
+                <!-- Rooms 3-9 (Unexplored) -->
+                <div class="room-cell">
+                    <div class="room-number">3</div>
+                    <div class="room-icon">❓</div>
+                    <div class="room-status">Unexplored</div>
+                </div>
+
+                <div class="room-cell">
+                    <div class="room-number">4</div>
+                    <div class="room-icon">❓</div>
+                    <div class="room-status">Unexplored</div>
+                </div>
+
+                <div class="room-cell">
+                    <div class="room-number">5</div>
+                    <div class="room-icon">❓</div>
+                    <div class="room-status">Unexplored</div>
+                </div>
+
+                <div class="room-cell">
+                    <div class="room-number">6</div>
+                    <div class="room-icon">❓</div>
+                    <div class="room-status">Unexplored</div>
+                </div>
+
+                <div class="room-cell">
+                    <div class="room-number">7</div>
+                    <div class="room-icon">❓</div>
+                    <div class="room-status">Unexplored</div>
+                </div>
+
+                <div class="room-cell">
+                    <div class="room-number">8</div>
+                    <div class="room-icon">❓</div>
+                    <div class="room-status">Unexplored</div>
+                </div>
+
+                <div class="room-cell">
+                    <div class="room-number">9</div>
+                    <div class="room-icon">❓</div>
+                    <div class="room-status">Unexplored</div>
+                </div>
+
+                <!-- Boss Room -->
+                <div class="room-cell boss">
+                    <div class="room-number">10</div>
+                    <div class="room-icon">👹</div>
+                    <div class="room-status">Frost Titan</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Panel: Controls and Party Status -->
+        <div class="control-panel">
+            <h2 class="section-title">⚡ Operations</h2>
+            
+            <!-- Party Status -->
+            <div class="party-status" id="party-status" hx-get="/api/dungeons/party-status" hx-trigger="every 30s" hx-swap="innerHTML">
+                <h3 style="font-family: 'Press Start 2P', monospace; font-size: 9px; color: #10b981; margin: 0 0 8px 0;">Party Status</h3>
+                
+                <div class="party-member">
+                    <span>Sarah (Healer)</span>
+                    <div class="health-bar">
+                        <div class="health-fill" style="width: 85%;"></div>
+                    </div>
+                </div>
+                
+                <div class="party-member">
+                    <span>Mike (Fighter)</span>
+                    <div class="health-bar">
+                        <div class="health-fill" style="width: 92%;"></div>
+                    </div>
+                </div>
+                
+                <div class="party-member">
+                    <span>Lisa (Paladin)</span>
+                    <div class="health-bar">
+                        <div class="health-fill" style="width: 78%;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <button class="action-button" hx-post="/api/dungeons/combat" hx-target="#combat-modal" hx-swap="innerHTML">
+                ⚔️ Start Combat
+            </button>
+            
+            <button class="action-button" hx-post="/api/dungeons/advance" hx-target="#dungeon-main" hx-swap="innerHTML">
+                ➡️ Advance Room
+            </button>
+            
+            <button class="action-button" hx-post="/api/dungeons/start-mining" hx-target="#room-grid" hx-swap="innerHTML">
+                ⛏️ Start Mining
+            </button>
+            
+            <button class="action-button danger-button" hx-post="/api/dungeons/retreat" hx-target="#dungeon-main" hx-swap="innerHTML">
+                🏃 Retreat to Entrance
+            </button>
+
+            <!-- Resource Summary -->
+            <div class="party-status" style="margin-top: 20px;">
+                <h3 style="font-family: 'Press Start 2P', monospace; font-size: 9px; color: #fbbf24; margin: 0 0 8px 0;">Run Summary</h3>
+                <div style="font-size: 12px; line-height: 1.4;">
+                    💰 Gold Earned: 2,850<br>
+                    ✨ EXP Gained: 1,420<br>
+                    🏆 Rooms Cleared: 2/10<br>
+                    ⛏️ Mining Ops: 1 active
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Combat Modal (hidden by default) -->
+    <div id="combat-modal" style="display: none;"></div>
+
+    <!-- Server-Sent Events for real-time updates -->
+    <div hx-ext="sse" sse-connect="/api/dungeons/events" style="display: none;">
+        <div sse-on="mining-update" hx-get="/api/dungeons/room-status" hx-target="#room-grid" hx-swap="innerHTML"></div>
+        <div sse-on="combat-complete" hx-get="/api/dungeons/room-status" hx-target="#room-grid" hx-swap="innerHTML"></div>
+        <div sse-on="time-update" hx-get="/api/dungeons/time-status" hx-target=".time-display" hx-swap="innerHTML"></div>
+    </div>
+</body>
+</html>
