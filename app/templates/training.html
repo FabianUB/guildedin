@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Training {{ adventurer.name }} - GuildedIn</title>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/components.css">
+    <script src="https://unpkg.com/htmx.org@1.9.10/dist/htmx.min.js"></script>
+    <style>
+        /* Page-specific styles for Training page */
+        
+        .training-layout {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* Adventurer Header Card */
+        .adventurer-header-card {
+            background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+            border: 2px solid #374151;
+            border-top: 4px solid #10b981;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .training-header {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 16px;
+        }
+
+        .training-avatar {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #10b981, #047857);
+            border: 4px solid #6ee7b7;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            flex-shrink: 0;
+            box-shadow: 
+                inset -2px -2px 0 rgba(0,0,0,0.3),
+                inset 2px 2px 0 rgba(255,255,255,0.2);
+        }
+
+        .training-info {
+            flex: 1;
+        }
+
+        .training-name {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 16px;
+            color: #fbbf24;
+            text-shadow: 2px 2px 0 #92400e;
+            margin: 0 0 8px 0;
+            line-height: 1.3;
+        }
+
+        .training-class {
+            font-size: 14px;
+            color: #6ee7b7;
+            margin-bottom: 12px;
+        }
+
+        /* Current Condition */
+        .condition-display {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+
+        .condition-item {
+            text-align: center;
+            padding: 8px;
+            background: linear-gradient(135deg, rgba(55, 65, 81, 0.5), rgba(31, 41, 55, 0.5));
+            border: 1px solid #4b5563;
+            border-radius: 4px;
+        }
+
+        .condition-icon {
+            font-size: 16px;
+            margin-bottom: 4px;
+        }
+
+        .condition-value {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 10px;
+            font-weight: bold;
+        }
+
+        .condition-label {
+            font-size: 8px;
+            color: #9ca3af;
+            font-family: 'Press Start 2P', monospace;
+            text-transform: uppercase;
+        }
+
+        .hp-condition .condition-value {
+            color: #ef4444;
+        }
+
+        .stamina-condition .condition-value {
+            color: #10b981;
+        }
+
+        .morale-condition .condition-value {
+            color: #8b5cf6;
+        }
+
+        /* Training Options Grid */
+        .training-options {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+
+        .training-card {
+            background: linear-gradient(135deg, #374151, #1f2937);
+            border: 2px solid #4b5563;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .training-card:hover {
+            border-color: #10b981;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(16, 185, 129, 0.2);
+        }
+
+        .training-card.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .training-card.disabled:hover {
+            border-color: #4b5563;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .training-title {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 12px;
+            color: #fbbf24;
+            text-shadow: 1px 1px 0 #92400e;
+            margin: 0 0 8px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .training-description {
+            font-size: 12px;
+            color: #d1d5db;
+            line-height: 1.4;
+            margin-bottom: 12px;
+        }
+
+        .training-costs {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 10px;
+            font-family: 'Press Start 2P', monospace;
+        }
+
+        .cost-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .cost-stamina {
+            color: #10b981;
+        }
+
+        .cost-morale {
+            color: #8b5cf6;
+        }
+
+        .expected-gain {
+            color: #fbbf24;
+        }
+
+        /* Rest Card Special Styling */
+        .rest-card {
+            border-left: 4px solid #6366f1;
+        }
+
+        .rest-card .training-title {
+            color: #6366f1;
+        }
+
+        /* Stat Training Cards */
+        .drive-card {
+            border-left: 4px solid #ef4444;
+        }
+
+        .efficiency-card {
+            border-left: 4px solid #f59e0b;
+        }
+
+        .resilience-card {
+            border-left: 4px solid #10b981;
+        }
+
+        .insight-card {
+            border-left: 4px solid #3b82f6;
+        }
+
+        .luck-card {
+            border-left: 4px solid #8b5cf6;
+        }
+
+        /* Current Stats Display */
+        .current-stats {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            margin-top: 16px;
+        }
+
+        .stat-display {
+            text-align: center;
+            padding: 8px;
+            background: linear-gradient(135deg, rgba(55, 65, 81, 0.3), rgba(31, 41, 55, 0.3));
+            border: 1px solid #4b5563;
+            border-radius: 4px;
+        }
+
+        .stat-display .stat-label {
+            font-size: 7px;
+            color: #9ca3af;
+            font-family: 'Press Start 2P', monospace;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+
+        .stat-display .stat-value {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 11px;
+            color: #10b981;
+            text-shadow: 1px 1px 0 #064e3b;
+            font-weight: bold;
+        }
+
+        /* Training Button */
+        .training-btn {
+            background: linear-gradient(135deg, #10b981, #047857);
+            color: #1f2937;
+            border: none;
+            padding: 12px 20px;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            width: 100%;
+            margin-top: 8px;
+        }
+
+        .training-btn:hover {
+            background: linear-gradient(135deg, #6ee7b7, #10b981);
+            transform: translateY(-1px);
+            box-shadow: 2px 2px 0 #064e3b;
+        }
+
+        .training-btn.disabled {
+            background: linear-gradient(135deg, #6b7280, #4b5563);
+            color: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        .training-btn.disabled:hover {
+            background: linear-gradient(135deg, #6b7280, #4b5563);
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Training Results Animation */
+        #training-result-area > div {
+            animation: slideInUp 0.5s ease-out, pulse 0.3s ease-in-out 0.5s;
+        }
+
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.02);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="scanlines"></div>
+
+    {% set page_title = "Training " + adventurer.name %}
+    {% set back_url = "/weekly-planner" %}
+    {% set back_text = "Back to Planner" %}
+    {% include 'components/topbar.html' %}
+
+    <!-- Main Layout -->
+    <div class="main-layout">
+        {% set show_team_status = false %}
+        {% include 'components/guild_sidebar.html' %}
+
+        <!-- Right Content Area -->
+        <main class="training-layout">
+            <!-- Adventurer Header Card -->
+            <div class="adventurer-header-card">
+                <div class="training-header">
+                    <div class="training-avatar">{{ adventurer.class_emoji }}</div>
+                    <div class="training-info">
+                        <h1 class="training-name">{{ adventurer.name }}</h1>
+                        <p class="training-class">{{ adventurer.class_display_name }} • {{ adventurer.seniority_display_name }}</p>
+                        
+                        <div class="condition-display">
+                            <div class="condition-item hp-condition">
+                                <div class="condition-icon">❤️</div>
+                                <div class="condition-value">{{ adventurer.current_hp }}/{{ adventurer.max_hp }}</div>
+                                <div class="condition-label">Health</div>
+                            </div>
+                            <div class="condition-item stamina-condition">
+                                <div class="condition-icon">⚡</div>
+                                <div class="condition-value">{{ adventurer.stamina }}/100</div>
+                                <div class="condition-label">Stamina</div>
+                            </div>
+                            <div class="condition-item morale-condition">
+                                <div class="condition-icon">😊</div>
+                                <div class="condition-value">{{ adventurer.morale }}/100</div>
+                                <div class="condition-label">Morale</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Current Stats Display -->
+                <div class="current-stats">
+                    <div class="stat-display">
+                        <div class="stat-label">Drive</div>
+                        <div class="stat-value">{{ adventurer.drive }}</div>
+                    </div>
+                    <div class="stat-display">
+                        <div class="stat-label">Efficiency</div>
+                        <div class="stat-value">{{ adventurer.efficiency }}</div>
+                    </div>
+                    <div class="stat-display">
+                        <div class="stat-label">Resilience</div>
+                        <div class="stat-value">{{ adventurer.resilience }}</div>
+                    </div>
+                    <div class="stat-display">
+                        <div class="stat-label">Insight</div>
+                        <div class="stat-value">{{ adventurer.insight }}</div>
+                    </div>
+                    <div class="stat-display">
+                        <div class="stat-label">Luck</div>
+                        <div class="stat-value">{{ adventurer.luck }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Training Options -->
+            <div class="content-card">
+                <div class="content-inner">
+                    <h2 class="section-title">🎯 Training Options</h2>
+                    
+                    {% if game_session.actions_remaining <= 0 %}
+                    <div style="color: #ef4444; text-align: center; padding: 16px; background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; border-radius: 4px; margin-bottom: 16px;">
+                        ❌ No weekly actions remaining! Wait until next week to train.
+                    </div>
+                    {% endif %}
+                    
+                    <div id="training-result-area"></div>
+                    
+                    <div class="training-options">
+                        <!-- Drive Training -->
+                        <div class="training-card drive-card {% if not adventurer.can_train() or game_session.actions_remaining <= 0 %}disabled{% endif %}">
+                            <div class="training-title">
+                                <span>💪</span>
+                                <span>Train Drive</span>
+                            </div>
+                            <div class="training-description">
+                                Physical strength and determination training. Increases melee damage and health.
+                            </div>
+                            <div class="training-costs">
+                                <div class="cost-item cost-stamina">⚡ -5</div>
+                                <div class="cost-item cost-morale">😊 ±0-2</div>
+                                <div class="cost-item expected-gain">+1-3 Drive</div>
+                            </div>
+                            <button class="training-btn {% if not adventurer.can_train() or game_session.actions_remaining <= 0 %}disabled{% endif %}"
+                                    hx-post="/api/train/{{ adventurer.id }}"
+                                    hx-vals='{"training_type": "drive"}'
+                                    hx-target="#training-result-area"
+                                    {% if not adventurer.can_train() or game_session.actions_remaining <= 0 %}disabled{% endif %}>
+                                Train Drive
+                            </button>
+                        </div>
+
+                        <!-- Efficiency Training -->
+                        <div class="training-card efficiency-card {% if not adventurer.can_train() or game_session.actions_remaining <= 0 %}disabled{% endif %}">
+                            <div class="training-title">
+                                <span>⚡</span>
+                                <span>Train Efficiency</span>
+                            </div>
+                            <div class="training-description">
+                                Speed and dexterity drills. Increases attack speed and critical chance.
+                            </div>
+                            <div class="training-costs">
+                                <div class="cost-item cost-stamina">⚡ -5</div>
+                                <div class="cost-item cost-morale">😊 ±0-2</div>
+                                <div class="cost-item expected-gain">+1-3 Efficiency</div>
+                            </div>
+                            <button class="training-btn {% if not adventurer.can_train() or game_session.actions_remaining <= 0 %}disabled{% endif %}"
+                                    hx-post="/api/train/{{ adventurer.id }}"
+                                    hx-vals='{"training_type": "efficiency"}'
+                                    hx-target="#training-result-area"
+                                    {% if not adventurer.can_train() or game_session.actions_remaining <= 0 %}disabled{% endif %}>
+                                Train Efficiency
+                            </button>
+                        </div>
+
+                        <!-- Resilience Training -->
+                        <div class="training-card resilience-card {% if not adventurer.can_train() or game_session.actions_remaining <= 0 %}disabled{% endif %}">
+                            <div class="training-title">
+                                <span>🛡️</span>
+                                <span>Train Resilience</span>
+                            </div>
+                            <div class="training-description">
+                                Endurance and constitution building. Increases defense and maximum health.
+                            </div>
+                            <div class="training-costs">
+                                <div class="cost-item cost-stamina">⚡ -5</div>
+                                <div class="cost-item cost-morale">😊 ±0-2</div>
+                                <div class="cost-item expected-gain">+1-3 Resilience</div>
+                            </div>
+                            <button class="training-btn {% if not adventurer.can_train() or game_session.actions_remaining <= 0 %}disabled{% endif %}"
+                                    hx-post="/api/train/{{ adventurer.id }}"
+                                    hx-vals='{"training_type": "resilience"}'
+                                    hx-target="#training-result-area"
+                                    {% if not adventurer.can_train() or game_session.actions_remaining <= 0 %}disabled{% endif %}>
+                                Train Resilience
+                            </button>
+                        </div>
+
+                        <!-- Insight Training -->
+                        <div class="training-card insight-card {% if not adventurer.can_train() or game_session.actions_remaining <= 0 %}disabled{% endif %}">
+                            <div class="training-title">
+                                <span>🧠</span>
+                                <span>Train Insight</span>
+                            </div>
+                            <div class="training-description">
+                                Mental exercises and magical study. Increases magical damage and skill effectiveness.
+                            </div>
+                            <div class="training-costs">
+                                <div class="cost-item cost-stamina">⚡ -5</div>
+                                <div class="cost-item cost-morale">😊 ±0-2</div>
+                                <div class="cost-item expected-gain">+1-3 Insight</div>
+                            </div>
+                            <button class="training-btn {% if not adventurer.can_train() or game_session.actions_remaining <= 0 %}disabled{% endif %}"
+                                    hx-post="/api/train/{{ adventurer.id }}"
+                                    hx-vals='{"training_type": "insight"}'
+                                    hx-target="#training-result-area"
+                                    {% if not adventurer.can_train() or game_session.actions_remaining <= 0 %}disabled{% endif %}>
+                                Train Insight
+                            </button>
+                        </div>
+
+                        <!-- Lucky Training (Special) -->
+                        <div class="training-card luck-card {% if not adventurer.can_train() or game_session.actions_remaining <= 0 %}disabled{% endif %}">
+                            <div class="training-title">
+                                <span>🍀</span>
+                                <span>Lucky Training</span>
+                            </div>
+                            <div class="training-description">
+                                Random skill practice. Small chance to gain Luck, but also trains other stats randomly.
+                            </div>
+                            <div class="training-costs">
+                                <div class="cost-item cost-stamina">⚡ -5</div>
+                                <div class="cost-item cost-morale">😊 ±0-2</div>
+                                <div class="cost-item expected-gain">??? Bonus</div>
+                            </div>
+                            <button class="training-btn {% if not adventurer.can_train() or game_session.actions_remaining <= 0 %}disabled{% endif %}"
+                                    hx-post="/api/train/{{ adventurer.id }}"
+                                    hx-vals='{"training_type": "luck"}'
+                                    hx-target="#training-result-area"
+                                    {% if not adventurer.can_train() or game_session.actions_remaining <= 0 %}disabled{% endif %}>
+                                Lucky Training
+                            </button>
+                        </div>
+
+                        <!-- Rest -->
+                        <div class="training-card rest-card {% if game_session.actions_remaining <= 0 %}disabled{% endif %}">
+                            <div class="training-title">
+                                <span>😴</span>
+                                <span>Rest & Recovery</span>
+                            </div>
+                            <div class="training-description">
+                                Take a break to restore stamina and morale. Consumes 1 action but restores condition.
+                            </div>
+                            <div class="training-costs">
+                                <div class="cost-item cost-stamina" style="color: #10b981;">⚡ +30</div>
+                                <div class="cost-item cost-morale" style="color: #8b5cf6;">😊 +15</div>
+                                <div class="cost-item" style="color: #fbbf24;">+25 Guild EXP</div>
+                            </div>
+                            <button class="training-btn {% if game_session.actions_remaining <= 0 %}disabled{% endif %}"
+                                    hx-post="/api/train/{{ adventurer.id }}"
+                                    hx-vals='{"training_type": "rest"}'
+                                    hx-target="#training-result-area"
+                                    {% if game_session.actions_remaining <= 0 %}disabled{% endif %}>
+                                Rest
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html>

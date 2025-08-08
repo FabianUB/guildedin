@@ -31,6 +31,12 @@
             transform: translateY(-1px);
         }
         
+        .filled-slot:hover {
+            border-color: #10b981;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(16, 185, 129, 0.2);
+        }
+        
         /* Empty Slot Styling */
         .empty-slot {
             border: 2px dashed #4b5563;
@@ -144,19 +150,78 @@
             text-shadow: 1px 1px 0 #92400e;
         }
         
-        /* Key Stats Layout */
-        .key-stats {
+        /* PTS and Cost Layout */
+        .adventurer-pts-cost {
             display: flex;
-            gap: 8px;
-            margin-top: 8px;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 4px;
         }
         
-        .key-stat {
+        .weekly-cost {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 8px;
+            color: #fbbf24;
+            text-shadow: 1px 1px 0 #92400e;
+        }
+        
+        /* Condition Stats Layout (Health, Stamina, Morale on one line) */
+        .condition-stats {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            margin: 8px 0;
+            padding: 8px;
+            background: linear-gradient(135deg, rgba(55, 65, 81, 0.3), rgba(31, 41, 55, 0.3));
+            border: 1px solid #4b5563;
+            border-radius: 4px;
+        }
+        
+        .condition-stat {
             display: flex;
             align-items: center;
             gap: 4px;
             flex: 1;
-            padding: 6px;
+            text-align: center;
+            justify-content: center;
+        }
+        
+        .condition-icon {
+            font-size: 14px;
+            line-height: 1;
+        }
+        
+        .condition-value {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 8px;
+            font-weight: bold;
+        }
+        
+        .hp-stat .condition-value {
+            color: #ef4444;
+            text-shadow: 1px 1px 0 #991b1b;
+        }
+        
+        .stamina-stat .condition-value {
+            color: #10b981;
+            text-shadow: 1px 1px 0 #064e3b;
+        }
+        
+        .morale-stat .condition-value {
+            color: #8b5cf6;
+            text-shadow: 1px 1px 0 #5b21b6;
+        }
+        
+        /* Core 5 Stats Layout */
+        .core-stats {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 4px;
+        }
+        
+        .core-stat {
+            text-align: center;
+            padding: 4px 2px;
             background: linear-gradient(135deg, rgba(55, 65, 81, 0.5), rgba(31, 41, 55, 0.5));
             border: 1px solid #4b5563;
             border-radius: 4px;
@@ -164,53 +229,221 @@
             overflow: hidden;
         }
         
-        .stat-icon {
-            font-size: 16px;
-            line-height: 1;
-            flex-shrink: 0;
-        }
-        
-        .stat-info {
-            display: flex;
-            flex-direction: column;
-            gap: 1px;
-            min-width: 0;
-            flex: 1;
-        }
-        
-        .stat-value {
-            font-family: 'Press Start 2P', monospace;
-            font-size: 8px;
-            font-weight: bold;
-            line-height: 1.1;
-            word-break: break-word;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        
-        .stat-label {
-            font-size: 6px;
+        .core-stat .stat-label {
+            font-size: 5px;
             color: #9ca3af;
             font-family: 'Press Start 2P', monospace;
             text-transform: uppercase;
+            margin-bottom: 2px;
+            line-height: 1;
+            word-break: break-word;
+            overflow: hidden;
+        }
+        
+        .core-stat .stat-value {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 9px;
+            color: #10b981;
+            text-shadow: 1px 1px 0 #064e3b;
+            font-weight: bold;
             line-height: 1;
         }
         
-        .hp-stat .stat-value {
-            color: #ef4444;
+        /* Facility and Dungeon specific styling */
+        .facility-slot {
+            border-left: 4px solid #8b5cf6;
         }
         
-        .salary-stat .stat-value {
+        .dungeon-slot {
+            border-left: 4px solid #f59e0b;
+        }
+        
+        .facility-type-badge {
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+            color: #ede9fe;
+            text-shadow: 1px 1px 0 #5b21b6;
+        }
+        
+        .facility-tier-badge {
+            background: linear-gradient(135deg, #6b7280, #4b5563);
+            color: #f3f4f6;
+            text-shadow: 1px 1px 0 #374151;
+        }
+        
+        .dungeon-type-badge {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: #1f2937;
+            text-shadow: 1px 1px 0 #92400e;
+        }
+        
+        .difficulty-badge {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: #fef2f2;
+            text-shadow: 1px 1px 0 #991b1b;
+        }
+        
+        .efficiency-stat .stat-value {
+            color: #a855f7;
+        }
+        
+        .maintenance-stat .stat-value {
+            color: #f59e0b;
+        }
+        
+        .upgrade-stat .stat-value {
+            color: #10b981;
+        }
+        
+        .reward-stat .stat-value {
             color: #fbbf24;
         }
         
-        .exp-stat .stat-value {
+        .risk-stat .stat-value {
+            color: #ef4444;
+        }
+        
+        .duration-stat .stat-value {
+            color: #3b82f6;
+        }
+        
+        .facility-btn {
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+            color: #ede9fe;
+        }
+        
+        .facility-btn:hover {
+            background: linear-gradient(135deg, #a78bfa, #8b5cf6);
+            box-shadow: 2px 2px 0 #5b21b6;
+        }
+        
+        .dungeon-btn {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: #1f2937;
+        }
+        
+        .dungeon-btn:hover {
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            box-shadow: 2px 2px 0 #92400e;
+        }
+
+        /* Week Advanced Popup */
+        .week-advanced-popup {
+            position: fixed;
+            top: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(6, 78, 59, 0.1));
+            border: 2px solid #10b981;
+            padding: 20px;
+            font-family: 'Press Start 2P', monospace;
+            text-align: center;
             color: #10b981;
+            box-shadow: 
+                inset -2px -2px 0 rgba(0,0,0,0.5),
+                inset 2px 2px 0 rgba(255,255,255,0.1),
+                0 8px 16px rgba(16, 185, 129, 0.3);
+            animation: slideInUp 0.5s ease-out;
+            max-width: 400px;
+            min-width: 300px;
+        }
+
+        .popup-title {
+            font-size: 12px;
+            color: #10b981;
+            margin-bottom: 12px;
+            text-shadow: 1px 1px 0 #064e3b;
+        }
+
+        .popup-subtitle {
+            font-size: 9px;
+            color: #d1d5db;
+            margin-bottom: 16px;
+        }
+
+        .popup-stats {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 16px;
+        }
+
+        .popup-stat-value {
+            font-size: 10px;
+            margin-bottom: 4px;
+        }
+
+        .popup-stat-label {
+            font-size: 6px;
+            color: #9ca3af;
+        }
+
+        .popup-footer {
+            font-size: 6px;
+            color: #6ee7b7;
+            margin-top: 12px;
+        }
+
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateX(-50%) translateY(-20px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0) scale(1);
+            }
         }
     </style>
 </head>
 <body>
     <div class="scanlines"></div>
+
+    {% if week_advanced %}
+    <!-- Week Advanced Success Popup -->
+    <div class="week-advanced-popup" id="week-popup">
+        <div class="popup-title">📅 WEEK ADVANCED</div>
+        <div class="popup-subtitle">Welcome to {{ game_session.game_date_display }}!</div>
+        
+        <div class="popup-stats">
+            <div class="popup-stat">
+                <div class="popup-stat-value" style="color: #fbbf24;">⚡ {{ game_session.weekly_action_limit }}</div>
+                <div class="popup-stat-label">Actions Restored</div>
+            </div>
+            <div class="popup-stat">
+                <div class="popup-stat-value" style="color: #fbbf24;">💰 +{{ (guild.gold * 0.05)|int }}G</div>
+                <div class="popup-stat-label">Gold Interest</div>
+            </div>
+            <div class="popup-stat">
+                <div class="popup-stat-value" style="color: #8b5cf6;">✨ +{{ (guild.get_available_guild_exp() * 0.05)|int }}</div>
+                <div class="popup-stat-label">EXP Interest</div>
+            </div>
+        </div>
+        
+        <div class="popup-footer">Time to make the most of this week!</div>
+    </div>
+    
+    <script>
+        // Auto-hide popup after 4 seconds
+        setTimeout(() => {
+            const popup = document.getElementById('week-popup');
+            if (popup) {
+                popup.style.animation = 'slideOutUp 0.5s ease-in forwards';
+                setTimeout(() => popup.remove(), 500);
+            }
+        }, 4000);
+        
+        @keyframes slideOutUp {
+            from {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0) scale(1);
+            }
+            to {
+                opacity: 0;
+                transform: translateX(-50%) translateY(-20px) scale(0.95);
+            }
+        }
+    </script>
+    {% endif %}
 
     {% set page_title = "Weekly Planning" %}
     {% include 'components/topbar.html' %}
@@ -232,7 +465,7 @@
                             {% if i < recruited_adventurers|length %}
                                 {% set adventurer = recruited_adventurers[i] %}
                                 <!-- Filled Slot -->
-                                <div class="adventurer-slot filled-slot">
+                                <div class="adventurer-slot filled-slot" onclick="window.location.href='/train/{{ adventurer.id }}'" style="cursor: pointer;">
                                     <div class="adventurer-header">
                                         <div class="adventurer-name-section">
                                             <span class="adventurer-avatar">{{ adventurer.class_emoji }}</span>
@@ -244,32 +477,49 @@
                                                 </div>
                                             </div>
                                         </div>
-                                        <span class="adventurer-level">LVL {{ adventurer.level }}</span>
+                                        <div class="adventurer-pts-cost">
+                                            <span class="adventurer-level">{{ adventurer.total_stats }} PTS</span>
+                                            <div class="weekly-cost">💳 {{ "{:,}".format(adventurer.weekly_salary) }}G/wk</div>
+                                        </div>
                                     </div>
                                     
-                                    <div class="key-stats">
-                                        <div class="key-stat hp-stat">
-                                            <div class="stat-icon">❤️</div>
-                                            <div class="stat-info">
-                                                <div class="stat-value">{{ adventurer.current_hp }}/{{ adventurer.max_hp }}</div>
-                                                <div class="stat-label">Health</div>
-                                            </div>
+                                    <!-- Condition Stats Row (Health, Stamina, Morale) -->
+                                    <div class="condition-stats">
+                                        <div class="condition-stat hp-stat">
+                                            <span class="condition-icon">❤️</span>
+                                            <span class="condition-value">{{ adventurer.current_hp }}/{{ adventurer.max_hp }}</span>
                                         </div>
-                                        
-                                        <div class="key-stat salary-stat">
-                                            <div class="stat-icon">💳</div>
-                                            <div class="stat-info">
-                                                <div class="stat-value">{{ "{:,}".format(adventurer.weekly_salary) }}G</div>
-                                                <div class="stat-label">Weekly Cost</div>
-                                            </div>
+                                        <div class="condition-stat stamina-stat">
+                                            <span class="condition-icon">⚡</span>
+                                            <span class="condition-value">{{ adventurer.stamina }}/100</span>
                                         </div>
-                                        
-                                        <div class="key-stat exp-stat">
-                                            <div class="stat-icon">⭐</div>
-                                            <div class="stat-info">
-                                                <div class="stat-value">{{ adventurer.experience_to_next_level() }}</div>
-                                                <div class="stat-label">EXP to Next</div>
-                                            </div>
+                                        <div class="condition-stat morale-stat">
+                                            <span class="condition-icon">😊</span>
+                                            <span class="condition-value">{{ adventurer.morale }}/100</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Core 5 Stats Row -->
+                                    <div class="core-stats">
+                                        <div class="core-stat">
+                                            <div class="stat-label">Drive</div>
+                                            <div class="stat-value">{{ adventurer.drive }}</div>
+                                        </div>
+                                        <div class="core-stat">
+                                            <div class="stat-label">Efficiency</div>
+                                            <div class="stat-value">{{ adventurer.efficiency }}</div>
+                                        </div>
+                                        <div class="core-stat">
+                                            <div class="stat-label">Resilience</div>
+                                            <div class="stat-value">{{ adventurer.resilience }}</div>
+                                        </div>
+                                        <div class="core-stat">
+                                            <div class="stat-label">Insight</div>
+                                            <div class="stat-value">{{ adventurer.insight }}</div>
+                                        </div>
+                                        <div class="core-stat">
+                                            <div class="stat-label">Luck</div>
+                                            <div class="stat-value">{{ adventurer.luck }}</div>
                                         </div>
                                     </div>
                                 </div>
@@ -280,6 +530,138 @@
                                     <div class="empty-slot-text">Empty Slot</div>
                                     <div class="empty-slot-text" style="font-size: 12px; margin-top: 4px;">Click to recruit an adventurer</div>
                                     <button class="recruit-btn">Recruit</button>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Facilities Card -->
+            <div class="content-card">
+                <div class="content-inner">
+                    <h2 class="section-title">🏭 Guild Facilities ({{ guild.get_current_facility_count() }}/{{ guild.get_max_facilities() }})</h2>
+                    
+                    <div class="adventurer-grid">
+                        {% set guild_facilities = guild.facilities or [] %}
+                        {% for i in range(guild.get_max_facilities()) %}
+                            {% if i < guild_facilities|length %}
+                                {% set facility = guild_facilities[i] %}
+                                <!-- Filled Facility Slot -->
+                                <div class="adventurer-slot filled-slot facility-slot">
+                                    <div class="adventurer-header">
+                                        <div class="adventurer-name-section">
+                                            <span class="adventurer-avatar">{{ facility.facility_emoji }}</span>
+                                            <div class="adventurer-name-info">
+                                                <h3 class="adventurer-name">{{ facility.name }}</h3>
+                                                <div class="adventurer-badges">
+                                                    <span class="info-badge facility-type-badge">{{ facility.facility_type.title() }}</span>
+                                                    <span class="info-badge facility-tier-badge">Tier {{ facility.tier }}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <span class="adventurer-level">LVL {{ facility.level }}</span>
+                                    </div>
+                                    
+                                    <div class="key-stats">
+                                        <div class="key-stat efficiency-stat">
+                                            <div class="stat-icon">⚡</div>
+                                            <div class="stat-info">
+                                                <div class="stat-value">+{{ facility.efficiency_bonus }}%</div>
+                                                <div class="stat-label">Efficiency</div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="key-stat maintenance-stat">
+                                            <div class="stat-icon">🔧</div>
+                                            <div class="stat-info">
+                                                <div class="stat-value">{{ "{:,}".format(facility.weekly_maintenance) }}G</div>
+                                                <div class="stat-label">Weekly Cost</div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="key-stat upgrade-stat">
+                                            <div class="stat-icon">⬆️</div>
+                                            <div class="stat-info">
+                                                <div class="stat-value">{{ "{:,}".format(facility.upgrade_cost) }}G</div>
+                                                <div class="stat-label">Upgrade</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% else %}
+                                <!-- Empty Facility Slot -->
+                                <div class="adventurer-slot empty-slot" onclick="window.location.href='/facilities'">
+                                    <div class="empty-slot-icon">🏗️</div>
+                                    <div class="empty-slot-text">Empty Facility</div>
+                                    <div class="empty-slot-text" style="font-size: 12px; margin-top: 4px;">Click to build a facility</div>
+                                    <button class="recruit-btn facility-btn">Build</button>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dungeon Contracts Card -->
+            <div class="content-card">
+                <div class="content-inner">
+                    <h2 class="section-title">🗺️ Dungeon Contracts ({{ guild.get_current_dungeon_count() }}/{{ guild.get_max_dungeons() }})</h2>
+                    
+                    <div class="adventurer-grid">
+                        {% set guild_dungeons = guild.dungeon_contracts or [] %}
+                        {% for i in range(guild.get_max_dungeons()) %}
+                            {% if i < guild_dungeons|length %}
+                                {% set dungeon = guild_dungeons[i] %}
+                                <!-- Filled Dungeon Slot -->
+                                <div class="adventurer-slot filled-slot dungeon-slot">
+                                    <div class="adventurer-header">
+                                        <div class="adventurer-name-section">
+                                            <span class="adventurer-avatar">{{ dungeon.dungeon_emoji }}</span>
+                                            <div class="adventurer-name-info">
+                                                <h3 class="adventurer-name">{{ dungeon.name }}</h3>
+                                                <div class="adventurer-badges">
+                                                    <span class="info-badge dungeon-type-badge">{{ dungeon.dungeon_type.title() }}</span>
+                                                    <span class="info-badge difficulty-badge">{{ dungeon.difficulty.title() }}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <span class="adventurer-level">{{ dungeon.completion_percentage }}%</span>
+                                    </div>
+                                    
+                                    <div class="key-stats">
+                                        <div class="key-stat reward-stat">
+                                            <div class="stat-icon">💰</div>
+                                            <div class="stat-info">
+                                                <div class="stat-value">{{ "{:,}".format(dungeon.base_reward) }}G</div>
+                                                <div class="stat-label">Base Reward</div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="key-stat risk-stat">
+                                            <div class="stat-icon">⚠️</div>
+                                            <div class="stat-info">
+                                                <div class="stat-value">{{ dungeon.risk_level }}/10</div>
+                                                <div class="stat-label">Risk Level</div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="key-stat duration-stat">
+                                            <div class="stat-icon">⏰</div>
+                                            <div class="stat-info">
+                                                <div class="stat-value">{{ dungeon.estimated_days }}d</div>
+                                                <div class="stat-label">Est. Time</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% else %}
+                                <!-- Empty Dungeon Slot -->
+                                <div class="adventurer-slot empty-slot" onclick="window.location.href='/dungeons'">
+                                    <div class="empty-slot-icon">🗂️</div>
+                                    <div class="empty-slot-text">No Contract</div>
+                                    <div class="empty-slot-text" style="font-size: 12px; margin-top: 4px;">Click to bid on dungeons</div>
+                                    <button class="recruit-btn dungeon-btn">Browse</button>
                                 </div>
                             {% endif %}
                         {% endfor %}

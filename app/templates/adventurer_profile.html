@@ -136,9 +136,16 @@
         }
 
         /* Stats Card */
-        .stats-grid {
+        .condition-stats-row {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+        
+        .core-stats-row {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
             gap: 16px;
         }
 
@@ -287,7 +294,7 @@
                         </div>
                     </div>
                     
-                    <div class="profile-level">Level {{ adventurer.level }}</div>
+                    <div class="profile-level">{{ adventurer.total_stats }} Total Stats • {{ adventurer.condition_status }}</div>
                 </div>
             </div>
 
@@ -295,34 +302,43 @@
         <div class="profile-card">
             <div class="profile-content">
                 <h2 class="section-title">📊 Combat Statistics</h2>
-                <div class="stats-grid">
+                <!-- Condition Stats Row -->
+                <div class="condition-stats-row">
                     <div class="stat-box">
                         <div class="stat-label">Hit Points</div>
-                        <div class="stat-value">{{ adventurer.max_hp }}</div>
+                        <div class="stat-value">{{ adventurer.current_hp }}/{{ adventurer.max_hp }}</div>
                     </div>
                     <div class="stat-box">
-                        <div class="stat-label">Strength</div>
-                        <div class="stat-value">{{ adventurer.strength }}</div>
+                        <div class="stat-label">Stamina</div>
+                        <div class="stat-value">{{ adventurer.stamina }}/100</div>
                     </div>
                     <div class="stat-box">
-                        <div class="stat-label">Dexterity</div>
-                        <div class="stat-value">{{ adventurer.dexterity }}</div>
+                        <div class="stat-label">Morale</div>
+                        <div class="stat-value">{{ adventurer.morale }}/100</div>
+                    </div>
+                </div>
+                
+                <!-- Core 5 Stats Row -->
+                <div class="core-stats-row">
+                    <div class="stat-box">
+                        <div class="stat-label">Drive</div>
+                        <div class="stat-value">{{ adventurer.drive }}</div>
                     </div>
                     <div class="stat-box">
-                        <div class="stat-label">Constitution</div>
-                        <div class="stat-value">{{ adventurer.constitution }}</div>
+                        <div class="stat-label">Efficiency</div>
+                        <div class="stat-value">{{ adventurer.efficiency }}</div>
                     </div>
                     <div class="stat-box">
-                        <div class="stat-label">Intelligence</div>
-                        <div class="stat-value">{{ adventurer.intelligence }}</div>
+                        <div class="stat-label">Resilience</div>
+                        <div class="stat-value">{{ adventurer.resilience }}</div>
                     </div>
                     <div class="stat-box">
-                        <div class="stat-label">Synergy</div>
-                        <div class="stat-value">{{ adventurer.synergy }}</div>
+                        <div class="stat-label">Insight</div>
+                        <div class="stat-value">{{ adventurer.insight }}</div>
                     </div>
                     <div class="stat-box">
-                        <div class="stat-label">Optics</div>
-                        <div class="stat-value">{{ adventurer.optics }}</div>
+                        <div class="stat-label">Luck</div>
+                        <div class="stat-value">{{ adventurer.luck }}</div>
                     </div>
                 </div>
             </div>

@@ -40,8 +40,8 @@
             <span class="sidebar-stat-value">{{ "{:,}".format(guild.gold) }}</span>
         </div>
         <div class="sidebar-stat-item">
-            <span class="sidebar-stat-label">✨ EXP</span>
-            <span class="sidebar-stat-value">{{ "{:,}".format(guild.exp) }}</span>
+            <span class="sidebar-stat-label">✨ Guild EXP</span>
+            <span class="sidebar-stat-value">{{ "{:,}".format(guild.get_available_guild_exp()) }}</span>
         </div>
         <div class="sidebar-stat-item">
             <span class="sidebar-stat-label">📈 Share Price</span>

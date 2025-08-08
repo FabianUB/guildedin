@@ -36,20 +36,14 @@ def generate_adventurer_name():
     return f"{first} {last}"
 
 def generate_base_stats(adventurer_class, seniority):
-    """Generate base stats that reflect class specialization and seniority"""
+    """Generate base stats using the new 5-stat system: Drive, Efficiency, Resilience, Insight, Luck"""
     
-    # Base stat templates by class (reflecting their strengths and weaknesses)
+    # Base stat templates by class (new 5-stat system, 4 classes only)
     base_stat_templates = {
-        "fighter": {"hp": 110, "str": 13, "dex": 9, "con": 12, "int": 7, "syn": 10, "opt": 8},
-        "rogue": {"hp": 85, "str": 9, "dex": 14, "con": 8, "int": 11, "syn": 12, "opt": 13},
-        "mage": {"hp": 70, "str": 6, "dex": 8, "con": 7, "int": 15, "syn": 11, "opt": 12},
-        "cleric": {"hp": 95, "str": 8, "dex": 9, "con": 10, "int": 13, "syn": 14, "opt": 11},
-        "archer": {"hp": 80, "str": 10, "dex": 13, "con": 8, "int": 9, "syn": 9, "opt": 14},
-        "paladin": {"hp": 105, "str": 12, "dex": 7, "con": 13, "int": 9, "syn": 12, "opt": 10},
-        "barbarian": {"hp": 120, "str": 15, "dex": 10, "con": 14, "int": 5, "syn": 7, "opt": 8},
-        "bard": {"hp": 75, "str": 7, "dex": 11, "con": 8, "int": 12, "syn": 15, "opt": 12},
-        "druid": {"hp": 90, "str": 8, "dex": 10, "con": 11, "int": 13, "syn": 12, "opt": 13},
-        "monk": {"hp": 85, "str": 11, "dex": 13, "con": 12, "int": 10, "syn": 12, "opt": 14}
+        "warrior": {"hp": 110, "drive": 15, "efficiency": 8, "resilience": 14, "insight": 6, "luck": 8},
+        "archer": {"hp": 80, "drive": 10, "efficiency": 15, "resilience": 8, "insight": 9, "luck": 12},
+        "mage": {"hp": 70, "drive": 6, "efficiency": 9, "resilience": 7, "insight": 16, "luck": 11},
+        "paladin": {"hp": 105, "drive": 12, "efficiency": 7, "resilience": 13, "insight": 11, "luck": 9},
     }
     
     # Seniority multipliers
@@ -59,7 +53,7 @@ def generate_base_stats(adventurer_class, seniority):
         "senior": 1.3    # 130% of base stats
     }
     
-    base_template = base_stat_templates.get(adventurer_class, base_stat_templates["fighter"])
+    base_template = base_stat_templates.get(adventurer_class, base_stat_templates["warrior"])
     multiplier = seniority_multipliers.get(seniority, 1.0)
     
     # Apply random variation (±15%) and seniority multiplier
@@ -174,7 +168,7 @@ def generate_adventurer(db, game_session_id=None):
     
     # Generate basic info
     name = generate_adventurer_name()
-    adventurer_class = random.choice(list(AdventurerClass)).value
+    adventurer_class = random.choice(["warrior", "archer", "mage", "paladin"])
     seniority = random.choice(list(AdventurerSeniority)).value
     role = Adventurer.get_role_for_class(adventurer_class)
     
@@ -187,12 +181,12 @@ def generate_adventurer(db, game_session_id=None):
     # Calculate hire cost based on seniority and total stats
     seniority_cost = {"junior": 300, "mid": 500, "senior": 800}[seniority]
     
-    # Calculate stat bonus (higher stats = higher cost)
+    # Calculate stat bonus (higher stats = higher cost) - new 5-stat system
     stat_total = sum([
-        base_stats["str"], base_stats["dex"], base_stats["con"],
-        base_stats["int"], base_stats["syn"], base_stats["opt"]
+        base_stats["drive"], base_stats["efficiency"], base_stats["resilience"],
+        base_stats["insight"], base_stats["luck"]
     ])
-    expected_total = 60  # Expected average total for base stats
+    expected_total = 50  # Expected average total for new 5-stat system
     stat_bonus = max(0, stat_total - expected_total) * 8
     
     hire_cost = seniority_cost + stat_bonus
@@ -210,20 +204,22 @@ def generate_adventurer(db, game_session_id=None):
         adventurer_class=adventurer_class,
         seniority=seniority,
         role=role,
-        level=1,
         is_available=True,
         hire_cost=hire_cost,
         weekly_salary=weekly_salary,
         
-        # Base stats (class-appropriate)
+        # Base stats (new 5-stat system)
         max_hp=base_stats["max_hp"],
         current_hp=base_stats["current_hp"],
-        strength=base_stats["str"],
-        dexterity=base_stats["dex"],
-        constitution=base_stats["con"],
-        intelligence=base_stats["int"],
-        synergy=base_stats["syn"],
-        optics=base_stats["opt"],
+        drive=base_stats["drive"],
+        efficiency=base_stats["efficiency"],
+        resilience=base_stats["resilience"],
+        insight=base_stats["insight"],
+        luck=base_stats["luck"],
+        
+        # Condition stats (Uma Musume style)
+        morale=random.randint(60, 90),
+        stamina=random.randint(80, 100),
         
         # Growth rates
         **growth_rates
@@ -259,11 +255,13 @@ def seed_adventurers_for_session(db, game_session_id, count=20):
     for i, adv in enumerate(adventurers[:5]):
         skills = [s.name for s in adv.skills]
         traits = [f"{t.name} ({t.rarity})" for t in adv.traits]
-        stats = f"STR:{adv.strength} DEX:{adv.dexterity} CON:{adv.constitution} INT:{adv.intelligence} SYN:{adv.synergy} OPT:{adv.optics}"
+        stats = f"DRV:{adv.drive} EFF:{adv.efficiency} RES:{adv.resilience} INS:{adv.insight} LCK:{adv.luck}"
+        condition = f"Morale:{adv.morale} Stamina:{adv.stamina} ({adv.condition_status})"
         
         print(f"   {i+1}. {adv.name} - {adv.class_display_name} {adv.seniority_display_name}")
         print(f"      💰 Hire: {adv.hire_cost}g | 💳 Salary: {adv.weekly_salary}g/week | ❤️ HP: {adv.max_hp}")
         print(f"      📊 {stats}")
+        print(f"      🎭 {condition}")
         print(f"      🗡️ Skills: {', '.join(skills)}")
         print(f"      ✨ Traits: {', '.join(traits)}")
         print()

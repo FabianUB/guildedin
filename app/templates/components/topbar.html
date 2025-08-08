@@ -19,5 +19,16 @@
         {% if game_session.should_show_activity_feed %}
         <a href="/dashboard" class="back-btn">← Back to Dashboard</a>
         {% endif %}
+        
+        <!-- Next Week Button -->
+        <div id="week-advance-area">
+            <button 
+                class="next-week-btn"
+                hx-post="/api/advance-week"
+                hx-target="#week-advance-area"
+                hx-swap="outerHTML">
+                📅 Next Week
+            </button>
+        </div>
     </div>
 </nav>

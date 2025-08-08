@@ -152,26 +152,27 @@ class Adventurer(Base):
     adventurer_class = Column(String, nullable=False)  # AdventurerClass enum value
     seniority = Column(String, nullable=False, default="junior")  # AdventurerSeniority enum value
     role = Column(String, nullable=False)  # AdventurerRole enum value
-    level = Column(Integer, default=1)  # Character level (1-100)
     
-    # Core RPG Stats (Current Values)
+    # Core 5 Stats (Uma Musume Style)
     max_hp = Column(Integer, default=100)
     current_hp = Column(Integer, default=100)
-    strength = Column(Integer, default=10)
-    dexterity = Column(Integer, default=10)
-    constitution = Column(Integer, default=10)
-    intelligence = Column(Integer, default=10)
-    synergy = Column(Integer, default=10)  # Team coordination
-    optics = Column(Integer, default=10)   # Perception/awareness
+    drive = Column(Integer, default=10)       # Physical strength and determination (STR)
+    efficiency = Column(Integer, default=10)  # Speed and dexterity (DEX/SPEED)  
+    resilience = Column(Integer, default=10)  # Endurance and constitution (CON/END)
+    insight = Column(Integer, default=10)     # Intelligence and wisdom (INT/WIS)
+    luck = Column(Integer, default=10)        # Fortune and critical success chance
     
-    # Fire Emblem-Style Growth Rates (Percentages, can exceed 100%)
-    hp_growth = Column(Integer, default=80)      # % chance to gain HP per level
-    str_growth = Column(Integer, default=60)     # % chance to gain STR per level
-    dex_growth = Column(Integer, default=50)     # % chance to gain DEX per level
-    con_growth = Column(Integer, default=40)     # % chance to gain CON per level
-    int_growth = Column(Integer, default=30)     # % chance to gain INT per level
-    syn_growth = Column(Integer, default=45)     # % chance to gain SYN per level
-    opt_growth = Column(Integer, default=55)     # % chance to gain OPT per level
+    # Condition Stats (Uma Musume Style)
+    morale = Column(Integer, default=75)      # Mood/happiness (0-100)
+    stamina = Column(Integer, default=100)    # Energy for training/dungeons (0-100)
+    
+    # Fire Emblem-Style Growth Rates for Training (Percentages, can exceed 100%)
+    hp_growth = Column(Integer, default=80)       # % chance to gain HP during training
+    drive_growth = Column(Integer, default=60)    # % chance to gain Drive during strength training
+    efficiency_growth = Column(Integer, default=50)  # % chance to gain Efficiency during speed training
+    resilience_growth = Column(Integer, default=40)  # % chance to gain Resilience during endurance training
+    insight_growth = Column(Integer, default=30)     # % chance to gain Insight during wisdom training
+    luck_growth = Column(Integer, default=20)        # % chance to gain Luck during any training (low base chance)
     
     # Recruitment Info
     hire_cost = Column(Integer, default=500)  # Cost to recruit
@@ -260,32 +261,46 @@ class Adventurer(Base):
         """Check if adventurer is in critical condition"""
         return self.current_hp <= (self.max_hp * 0.25)
     
-    def experience_to_next_level(self):
-        """Calculate EXP needed to reach next level using RuneScape-style formula"""
-        if self.level >= 100:
-            return "MAX"
-        
-        current_level_xp = self.get_xp_for_level(self.level)
-        next_level_xp = self.get_xp_for_level(self.level + 1)
-        
-        # For now, assume adventurer has just reached current level (0 progress)
-        # In full implementation, we'd track current_experience
-        xp_needed = next_level_xp - current_level_xp
-        
-        return f"{xp_needed:,}"
+    @property
+    def total_stats(self):
+        """Calculate total stat points (replaces level concept)"""
+        return self.drive + self.efficiency + self.resilience + self.insight + self.luck
     
-    @staticmethod
-    def get_xp_for_level(level):
-        """Get total XP required to reach a specific level (RuneScape formula)"""
-        if level <= 1:
-            return 0
+    @property
+    def condition_status(self):
+        """Get condition status based on morale and stamina (Uma Musume style)"""
+        avg_condition = (self.morale + self.stamina) / 2
+        if avg_condition >= 90:
+            return "Excellent"
+        elif avg_condition >= 75:
+            return "Good"
+        elif avg_condition >= 50:
+            return "Normal" 
+        elif avg_condition >= 25:
+            return "Poor"
+        else:
+            return "Bad"
+    
+    def can_train(self):
+        """Check if adventurer is in condition to train effectively"""
+        return self.stamina >= 10  # Only need 10 stamina since training costs 5
+    
+    def rest(self):
+        """Restore morale and stamina (alternative to training)"""
+        # Restore 20-40 stamina and 10-20 morale
+        import random
+        stamina_gain = random.randint(20, 40)
+        morale_gain = random.randint(10, 20)
         
-        # RuneScape formula: sum of ((level-1)^2 * 100 / 4) for each level
-        total_xp = 0
-        for i in range(2, level + 1):
-            total_xp += int((i - 1) ** 2 * 100 / 4)
+        self.stamina = min(100, self.stamina + stamina_gain)
+        self.morale = min(100, self.morale + morale_gain)
         
-        return total_xp
+        return {
+            "stamina_gained": stamina_gain,
+            "morale_gained": morale_gain,
+            "new_stamina": self.stamina,
+            "new_morale": self.morale
+        }
     
     def heal(self, amount):
         """Heal the adventurer by specified amount"""
@@ -297,66 +312,69 @@ class Adventurer(Base):
         self.current_hp = max(self.current_hp - amount, 0)
         return self.current_hp
     
-    def level_up(self):
+    def train_stat(self, stat_name, guild_exp_bonus=0):
         """
-        Fire Emblem-style level up with growth rate rolls.
-        Growth rates > 100% guarantee multiple points.
-        Example: 150% = guaranteed +1, 50% chance for +2 total
-        Returns dict of stat gains for display.
+        Train a specific stat using Fire Emblem-style growth rates.
+        Returns dict with gains and exp earned for guild builds.
         """
-        if self.level >= 100:
-            return {}
+        if not self.can_train():
+            return {"error": "Adventurer too tired to train effectively"}
         
         gains = {}
+        base_guild_exp = 50  # Base EXP earned for guild builds
         
-        # Roll each stat against its growth rate
-        # HP Growth (always show as max_hp increase)
-        hp_gain = self._roll_stat_growth(self.hp_growth)
+        # Determine which stat to train and its growth rate
+        growth_rates = {
+            "drive": self.drive_growth,
+            "efficiency": self.efficiency_growth, 
+            "resilience": self.resilience_growth,
+            "insight": self.insight_growth,
+            "luck": self.luck_growth
+        }
+        
+        if stat_name not in growth_rates:
+            return {"error": f"Invalid stat: {stat_name}"}
+        
+        # Roll for stat gain
+        stat_gain = self._roll_stat_growth(growth_rates[stat_name])
+        if stat_gain > 0:
+            # Apply stat gain
+            current_value = getattr(self, stat_name)
+            setattr(self, stat_name, current_value + stat_gain)
+            gains[stat_name.upper()] = stat_gain
+        
+        # Small chance for HP gain during any training
+        hp_gain = self._roll_stat_growth(self.hp_growth // 4)  # 1/4 chance of HP growth
         if hp_gain > 0:
-            self.max_hp += hp_gain * 5  # HP gains are multiplied for bigger numbers
-            self.current_hp = self.max_hp  # Heal to full on level up
-            gains['HP'] = hp_gain * 5
+            self.max_hp += hp_gain * 3
+            self.current_hp = min(self.current_hp + hp_gain * 3, self.max_hp)
+            gains['HP'] = hp_gain * 3
         
-        # Strength
-        str_gain = self._roll_stat_growth(self.str_growth)
-        if str_gain > 0:
-            self.strength += str_gain
-            gains['STR'] = str_gain
+        # Training costs consistent stamina, with chance to gain morale from successful training
+        import random
+        stamina_cost = 5  # Consistent low cost
         
-        # Dexterity  
-        dex_gain = self._roll_stat_growth(self.dex_growth)
-        if dex_gain > 0:
-            self.dexterity += dex_gain
-            gains['DEX'] = dex_gain
+        # Morale can increase or decrease slightly based on training success
+        if gains:  # If we gained stats, small chance for morale boost
+            morale_change = random.choice([-2, -1, 0, 0, 1])  # Mostly neutral, slight chance for +1 or -1/-2
+        else:  # Failed training session, slight morale drop
+            morale_change = random.choice([-2, -1, -1, 0])  # Higher chance for small morale drop
         
-        # Constitution
-        con_gain = self._roll_stat_growth(self.con_growth)
-        if con_gain > 0:
-            self.constitution += con_gain
-            gains['CON'] = con_gain
+        self.stamina = max(0, self.stamina - stamina_cost)
+        self.morale = max(0, min(100, self.morale + morale_change))
         
-        # Intelligence
-        int_gain = self._roll_stat_growth(self.int_growth)
-        if int_gain > 0:
-            self.intelligence += int_gain
-            gains['INT'] = int_gain
+        # Calculate guild EXP earned (affected by guild bonuses)
+        guild_exp_earned = int(base_guild_exp * (1 + guild_exp_bonus / 100))
         
-        # Synergy
-        syn_gain = self._roll_stat_growth(self.syn_growth)
-        if syn_gain > 0:
-            self.synergy += syn_gain
-            gains['SYN'] = syn_gain
-        
-        # Optics
-        opt_gain = self._roll_stat_growth(self.opt_growth)
-        if opt_gain > 0:
-            self.optics += opt_gain
-            gains['OPT'] = opt_gain
-        
-        # Level up
-        self.level += 1
-        
-        return gains
+        return {
+            "gains": gains,
+            "guild_exp_earned": guild_exp_earned,
+            "stamina_cost": stamina_cost,
+            "morale_change": morale_change,
+            "new_stamina": self.stamina,
+            "new_morale": self.morale,
+            "new_condition": self.condition_status
+        }
     
     def _roll_stat_growth(self, growth_rate):
         """
@@ -421,20 +439,21 @@ class Adventurer(Base):
     def generate_growth_rates(cls, adventurer_class, seniority):
         """
         Generate appropriate growth rates based on class and seniority.
-        Returns dict of growth rates.
+        Returns dict of growth rates for the new 5-stat system.
         """
         # Base growth rates by class (focused on their specialties)
+        # New 5-stat system: Drive, Efficiency, Resilience, Insight, Luck
         base_growths = {
-            "fighter": {"hp": 90, "str": 75, "dex": 45, "con": 70, "int": 25, "syn": 50, "opt": 40},
-            "rogue": {"hp": 60, "str": 50, "dex": 85, "con": 45, "int": 55, "syn": 65, "opt": 80},
-            "mage": {"hp": 45, "str": 20, "dex": 40, "con": 35, "int": 90, "syn": 55, "opt": 75},
-            "cleric": {"hp": 70, "str": 35, "dex": 50, "con": 55, "int": 80, "syn": 85, "opt": 65},
-            "archer": {"hp": 55, "str": 55, "dex": 80, "con": 40, "int": 45, "syn": 45, "opt": 85},
-            "paladin": {"hp": 85, "str": 65, "dex": 35, "con": 75, "int": 45, "syn": 70, "opt": 50},
-            "barbarian": {"hp": 95, "str": 85, "dex": 55, "con": 80, "int": 15, "syn": 30, "opt": 35},
-            "bard": {"hp": 50, "str": 30, "dex": 60, "con": 40, "int": 65, "syn": 90, "opt": 70},
-            "druid": {"hp": 65, "str": 40, "dex": 55, "con": 60, "int": 75, "syn": 65, "opt": 80},
-            "monk": {"hp": 75, "str": 60, "dex": 75, "con": 65, "int": 50, "syn": 70, "opt": 85}
+            "fighter": {"hp": 90, "drive": 80, "efficiency": 45, "resilience": 75, "insight": 30, "luck": 40},
+            "rogue": {"hp": 60, "drive": 55, "efficiency": 85, "resilience": 45, "insight": 60, "luck": 70},
+            "mage": {"hp": 45, "drive": 25, "efficiency": 40, "resilience": 35, "insight": 90, "luck": 65},
+            "cleric": {"hp": 70, "drive": 40, "efficiency": 50, "resilience": 60, "insight": 85, "luck": 55},
+            "archer": {"hp": 55, "drive": 60, "efficiency": 80, "resilience": 45, "insight": 50, "luck": 75},
+            "paladin": {"hp": 85, "drive": 70, "efficiency": 35, "resilience": 80, "insight": 50, "luck": 45},
+            "barbarian": {"hp": 95, "drive": 85, "efficiency": 60, "resilience": 85, "insight": 20, "luck": 50},
+            "bard": {"hp": 50, "drive": 35, "efficiency": 65, "resilience": 40, "insight": 70, "luck": 80},
+            "druid": {"hp": 65, "drive": 45, "efficiency": 55, "resilience": 65, "insight": 80, "luck": 75},
+            "monk": {"hp": 75, "drive": 65, "efficiency": 75, "resilience": 70, "insight": 55, "luck": 85}
         }
         
         # Seniority multipliers
@@ -449,12 +468,11 @@ class Adventurer(Base):
         
         return {
             "hp_growth": int(base["hp"] * multiplier),
-            "str_growth": int(base["str"] * multiplier),
-            "dex_growth": int(base["dex"] * multiplier),
-            "con_growth": int(base["con"] * multiplier),
-            "int_growth": int(base["int"] * multiplier),
-            "syn_growth": int(base["syn"] * multiplier),
-            "opt_growth": int(base["opt"] * multiplier)
+            "drive_growth": int(base["drive"] * multiplier),
+            "efficiency_growth": int(base["efficiency"] * multiplier),
+            "resilience_growth": int(base["resilience"] * multiplier),
+            "insight_growth": int(base["insight"] * multiplier),
+            "luck_growth": int(base["luck"] * multiplier)
         }
     
     @classmethod

@@ -89,6 +89,7 @@ async def dashboard(
 @app.get("/weekly-planner", response_class=HTMLResponse)
 async def weekly_planner(
     request: Request,
+    week_advanced: bool = False,
     current_player: Player = Depends(get_current_player_from_cookie),
     db: Session = Depends(get_db)
 ):
@@ -103,7 +104,8 @@ async def weekly_planner(
         "request": request,
         "player": current_player,
         "game_session": current_player.game_session,
-        "guild": current_player.guild
+        "guild": current_player.guild,
+        "week_advanced": week_advanced
     })
 
 @app.get("/recruit", response_class=HTMLResponse)
@@ -164,6 +166,257 @@ async def adventurer_profile(
         "guild": current_player.guild,
         "adventurer": adventurer
     })
+
+@app.get("/train/{adventurer_id}", response_class=HTMLResponse)
+async def training_interface(
+    adventurer_id: int,
+    request: Request,
+    current_player: Player = Depends(get_current_player_from_cookie),
+    db: Session = Depends(get_db)
+):
+    """Training Interface - Uma Musume-style training for individual adventurers"""
+    if not current_player or not current_player.game_session or not current_player.guild:
+        return RedirectResponse(url="/", status_code=302)
+    
+    from app.models.adventurer import Adventurer
+    
+    # Get the adventurer - must belong to current player's guild
+    adventurer = db.query(Adventurer).filter(
+        Adventurer.id == adventurer_id,
+        Adventurer.game_session_id == current_player.game_session.id,
+        Adventurer.guild_id == current_player.guild.id
+    ).first()
+    
+    if not adventurer:
+        return RedirectResponse(url="/weekly-planner", status_code=302)
+    
+    return templates.TemplateResponse("training.html", {
+        "request": request,
+        "player": current_player,
+        "game_session": current_player.game_session,
+        "guild": current_player.guild,
+        "adventurer": adventurer
+    })
+
+@app.post("/api/train/{adventurer_id}")
+async def train_adventurer(
+    adventurer_id: int,
+    training_type: str = Form(...),
+    current_player: Player = Depends(get_current_player_from_cookie),
+    db: Session = Depends(get_db)
+):
+    """Execute training for an adventurer"""
+    if not current_player or not current_player.game_session or not current_player.guild:
+        return HTMLResponse("❌ Authentication required", status_code=401)
+    
+    from app.models.adventurer import Adventurer
+    
+    # Get the adventurer - must belong to current player's guild
+    adventurer = db.query(Adventurer).filter(
+        Adventurer.id == adventurer_id,
+        Adventurer.game_session_id == current_player.game_session.id,
+        Adventurer.guild_id == current_player.guild.id
+    ).first()
+    
+    if not adventurer:
+        return HTMLResponse("❌ Adventurer not found", status_code=404)
+    
+    try:
+        # Check if player has remaining actions
+        if current_player.game_session.actions_remaining <= 0:
+            return HTMLResponse("❌ No weekly actions remaining", status_code=400)
+        
+        # Execute training using the Uma Musume training system
+        if training_type == "rest":
+            result = adventurer.rest()
+            exp_earned = 25  # Lower EXP for resting since it's just recovery
+        else:
+            # For actual stat training (drive, efficiency, resilience, insight, luck)
+            guild_bonus = current_player.guild.training_efficiency_bonus
+            result = adventurer.train_stat(training_type, guild_bonus)
+            
+            if "error" in result:
+                return HTMLResponse(f"❌ {result['error']}", status_code=400)
+            
+            exp_earned = 50  # Full EXP for stat training
+        
+        # Consume one weekly action (for all training types including rest)
+        current_player.game_session.actions_remaining -= 1
+        
+        # Award Guild EXP
+        current_player.guild.earn_guild_exp(exp_earned)
+        
+        # Commit changes
+        db.commit()
+        
+        # Create detailed training results popup
+        if training_type == "rest":
+            results_html = f"""
+            <div style="
+                color: #6366f1; 
+                background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(79, 70, 229, 0.1));
+                border: 2px solid #6366f1;
+                padding: 20px;
+                border-radius: 8px;
+                margin-bottom: 16px;
+                font-family: 'Press Start 2P', monospace;
+                text-align: center;
+                box-shadow: 0 8px 16px rgba(99, 102, 241, 0.3);
+            ">
+                <div style="font-size: 14px; color: #6366f1; margin-bottom: 12px;">
+                    😴 REST COMPLETED
+                </div>
+                <div style="font-size: 10px; color: #d1d5db; margin-bottom: 16px;">
+                    {adventurer.name} feels refreshed!
+                </div>
+                <div style="display: flex; justify-content: space-around; margin-bottom: 16px;">
+                    <div>
+                        <div style="color: #10b981;">⚡ +{result.get('stamina_gained', 0)}</div>
+                        <div style="font-size: 8px; color: #9ca3af;">Stamina</div>
+                    </div>
+                    <div>
+                        <div style="color: #8b5cf6;">😊 +{result.get('morale_gained', 0)}</div>
+                        <div style="font-size: 8px; color: #9ca3af;">Morale</div>
+                    </div>
+                    <div>
+                        <div style="color: #fbbf24;">✨ +{exp_earned}</div>
+                        <div style="font-size: 8px; color: #9ca3af;">Guild EXP</div>
+                    </div>
+                </div>
+                <div style="font-size: 8px; color: #9ca3af;">
+                    New Condition: {result.get('new_stamina', adventurer.stamina)}/100 Stamina, {result.get('new_morale', adventurer.morale)}/100 Morale
+                </div>
+            </div>
+            <script>
+                setTimeout(() => {{
+                    window.location.reload();
+                }}, 3000);
+            </script>
+            """
+        else:
+            # Stat training results
+            gains = result.get('gains', {})
+            morale_change = result.get('morale_change', 0)
+            training_name = training_type.title()
+            
+            # Create gains display
+            gains_display = ""
+            if gains:
+                for stat, amount in gains.items():
+                    if stat == 'HP':
+                        gains_display += f'<div><span style="color: #ef4444;">❤️ +{amount}</span> <span style="font-size: 8px;">Health</span></div>'
+                    else:
+                        gains_display += f'<div><span style="color: #10b981;">📈 +{amount}</span> <span style="font-size: 8px;">{stat.title()}</span></div>'
+            else:
+                gains_display = '<div style="color: #9ca3af;">📊 No stat gains this time</div>'
+            
+            # Morale change display
+            if morale_change > 0:
+                morale_display = f'<div style="color: #8b5cf6;">😊 +{morale_change}</div>'
+                morale_label = "Morale Boost!"
+            elif morale_change < 0:
+                morale_display = f'<div style="color: #f59e0b;">😕 {morale_change}</div>'
+                morale_label = "Morale Drop"
+            else:
+                morale_display = f'<div style="color: #9ca3af;">😐 +0</div>'
+                morale_label = "Morale Stable"
+            
+            results_html = f"""
+            <div style="
+                color: #10b981; 
+                background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(6, 78, 59, 0.1));
+                border: 2px solid #10b981;
+                padding: 20px;
+                border-radius: 8px;
+                margin-bottom: 16px;
+                font-family: 'Press Start 2P', monospace;
+                text-align: center;
+                box-shadow: 0 8px 16px rgba(16, 185, 129, 0.3);
+            ">
+                <div style="font-size: 14px; color: #10b981; margin-bottom: 8px;">
+                    💪 {training_name.upper()} TRAINING
+                </div>
+                <div style="font-size: 10px; color: #d1d5db; margin-bottom: 16px;">
+                    {adventurer.name} completed training!
+                </div>
+                <div style="display: flex; justify-content: space-around; margin-bottom: 16px; gap: 16px;">
+                    <div>
+                        {gains_display}
+                    </div>
+                    <div>
+                        {morale_display}
+                        <div style="font-size: 8px; color: #9ca3af;">{morale_label}</div>
+                    </div>
+                    <div>
+                        <div style="color: #fbbf24;">✨ +{exp_earned}</div>
+                        <div style="font-size: 8px; color: #9ca3af;">Guild EXP</div>
+                    </div>
+                </div>
+                <div style="display: flex; justify-content: center; gap: 16px; margin-bottom: 8px;">
+                    <div style="font-size: 8px; color: #9ca3af;">
+                        ⚡ {result.get('new_stamina', adventurer.stamina)}/100 Stamina
+                    </div>
+                    <div style="font-size: 8px; color: #9ca3af;">
+                        😊 {result.get('new_morale', adventurer.morale)}/100 Morale
+                    </div>
+                </div>
+                <div style="font-size: 8px; color: #6ee7b7;">
+                    Condition: {result.get('new_condition', adventurer.condition_status)}
+                </div>
+            </div>
+            <script>
+                setTimeout(() => {{
+                    window.location.reload();
+                }}, 3500);
+            </script>
+            """
+        
+        return HTMLResponse(results_html)
+        
+    except Exception as e:
+        logger.error(f"Training error: {str(e)}")
+        return HTMLResponse("❌ Training failed", status_code=500)
+
+@app.post("/api/advance-week")
+async def advance_week(
+    current_player: Player = Depends(get_current_player_from_cookie),
+    db: Session = Depends(get_db)
+):
+    """Advance to next week and reset weekly resources"""
+    if not current_player or not current_player.game_session or not current_player.guild:
+        return HTMLResponse("❌ Authentication required", status_code=401)
+    
+    try:
+        # Advance the week and get interest results
+        interest_results = current_player.game_session.advance_week(db)
+        
+        # Commit all changes
+        db.commit()
+        
+        # Create success message with week info and interest details
+        new_week = current_player.game_session.game_date_display
+        actions_reset = current_player.game_session.weekly_action_limit
+        
+        # Return just a simple success message, the popup will show on the weekly planner page
+        success_html = """
+        <button 
+            class="next-week-btn"
+            hx-post="/api/advance-week"
+            hx-target="#week-advance-area"
+            hx-swap="outerHTML">
+            📅 Next Week
+        </button>
+        <script>
+            // Redirect to weekly planner with success parameter
+            window.location.href = '/weekly-planner?week_advanced=true';
+        </script>
+        """
+        
+        return HTMLResponse(success_html)
+        
+    except Exception as e:
+        logger.error(f"Week advancement error: {str(e)}")
+        return HTMLResponse("❌ Failed to advance week", status_code=500)
 
 @app.get("/health")
 async def health():
