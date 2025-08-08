@@ -12,7 +12,7 @@ from .models.database import get_db
 # Configuration
 SECRET_KEY = "your-secret-key-change-in-production"  # TODO: Move to environment variables
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30 * 24 * 60  # 30 days
+ACCESS_TOKEN_EXPIRE_MINUTES = 2 * 60  # 2 hours for development
 
 # Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -126,19 +126,33 @@ def create_player(
         username=username,
         hashed_password=hashed_password,
         display_name=display_name,
-        corporate_class=CorporateClass(corporate_class),
-        current_position=f"Aspiring {corporate_class.replace('_', ' ').title().replace('Manager', 'Manager')}",
-        professional_summary=f"Eager professional ready to build the next great guild!",
-        location="Global Network"
+        corporate_class=CorporateClass(corporate_class)
     )
     
     db.add(player)
     db.commit()
     db.refresh(player)
     
-    # Create initial game session for new player with custom guild name
-    from .services.game_session_service import GameSessionService
-    session_service = GameSessionService(db)
-    game_session = session_service.create_new_session(player.id, guild_name)
+    # Create game session for the new player
+    from .models.game_session import GameSession
+    game_session = GameSession(
+        player_id=player.id
+    )
+    
+    db.add(game_session)
+    db.commit()
+    db.refresh(game_session)
+    
+    # Create guild for the new player within their game session
+    from .models.guild import Guild
+    guild = Guild(
+        name=guild_name,
+        owner_id=player.id,
+        game_session_id=game_session.id
+    )
+    
+    db.add(guild)
+    db.commit()
+    db.refresh(guild)
     
     return player

@@ -5,6 +5,8 @@ from fastapi.templating import Jinja2Templates
 from pathlib import Path
 from datetime import timedelta
 from sqlalchemy.orm import Session
+import logging
+import traceback
 
 from app.models.database import get_db
 from app.models.user import Player
@@ -14,6 +16,10 @@ from app.auth import (
     create_player, 
     create_access_token
 )
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title="GuildedIn API",
@@ -38,11 +44,21 @@ async def root(
     current_player: Player = Depends(get_current_player_from_cookie),
     db: Session = Depends(get_db)
 ):
-    if current_player:
-        # Player is logged in, show dashboard
-        return templates.TemplateResponse("guild_dashboard.html", {"request": request, "player": current_player})
+    if current_player and current_player.game_session and current_player.guild:
+        # Player is logged in with complete data, redirect to appropriate page
+        if current_player.game_session.should_show_activity_feed:
+            # Show activity feed for tutorial (week 1) and quarterly briefings (week 14)
+            return templates.TemplateResponse("guild_dashboard.html", {
+                "request": request, 
+                "player": current_player,
+                "game_session": current_player.game_session,
+                "guild": current_player.guild
+            })
+        else:
+            # Redirect to weekly planner for normal gameplay weeks
+            return RedirectResponse(url="/weekly-planner", status_code=302)
     else:
-        # Not logged in, show landing page
+        # Not logged in or incomplete data, show landing page
         return templates.TemplateResponse("landing.html", {"request": request})
 
 @app.get("/dashboard", response_class=HTMLResponse)
@@ -51,9 +67,87 @@ async def dashboard(
     current_player: Player = Depends(get_current_player_from_cookie),
     db: Session = Depends(get_db)
 ):
-    if not current_player:
+    if not current_player or not current_player.game_session or not current_player.guild:
+        # Player doesn't exist or has incomplete data, redirect to landing
         return RedirectResponse(url="/", status_code=302)
-    return templates.TemplateResponse("guild_dashboard.html", {"request": request, "player": current_player})
+    
+    # Check if activity feed should be shown (weeks 1 and 14)
+    if not current_player.game_session.should_show_activity_feed:
+        # Redirect to weekly planner for normal gameplay weeks
+        return RedirectResponse(url="/weekly-planner", status_code=302)
+    
+    # Show activity feed for tutorial (week 1) and quarterly briefings (week 14)
+    return templates.TemplateResponse("guild_dashboard.html", {
+        "request": request, 
+        "player": current_player,
+        "game_session": current_player.game_session,
+        "guild": current_player.guild
+    })
+
+@app.get("/weekly-planner", response_class=HTMLResponse)
+async def weekly_planner(
+    request: Request,
+    current_player: Player = Depends(get_current_player_from_cookie),
+    db: Session = Depends(get_db)
+):
+    """Weekly Planner - where players manage their weekly actions"""
+    if not current_player or not current_player.game_session or not current_player.guild:
+        return RedirectResponse(url="/", status_code=302)
+    
+    return templates.TemplateResponse("weekly_planner.html", {
+        "request": request,
+        "player": current_player,
+        "game_session": current_player.game_session,
+        "guild": current_player.guild
+    })
+
+@app.get("/recruit", response_class=HTMLResponse)
+async def recruit(
+    request: Request,
+    current_player: Player = Depends(get_current_player_from_cookie),
+    db: Session = Depends(get_db)
+):
+    """Recruitment Portal - where players recruit new adventurers"""
+    if not current_player or not current_player.game_session or not current_player.guild:
+        return RedirectResponse(url="/", status_code=302)
+    
+    return templates.TemplateResponse("recruit.html", {
+        "request": request,
+        "player": current_player,
+        "game_session": current_player.game_session,
+        "guild": current_player.guild
+    })
+
+@app.get("/adventurer/{adventurer_id}", response_class=HTMLResponse)
+async def adventurer_profile(
+    adventurer_id: int,
+    request: Request,
+    current_player: Player = Depends(get_current_player_from_cookie),
+    db: Session = Depends(get_db)
+):
+    """Adventurer Profile - LinkedIn-style detailed view of an adventurer"""
+    if not current_player or not current_player.game_session or not current_player.guild:
+        return RedirectResponse(url="/", status_code=302)
+    
+    # TODO: Fetch actual adventurer data from database when generation system is implemented
+    # For now, return mock data based on adventurer_id
+    mock_adventurers = {
+        1: {"name": "Gareth the Bold", "class": "Fighter", "level": 15, "avatar": "⚔️"},
+        2: {"name": "Lyra Swiftshot", "class": "Archer", "level": 12, "avatar": "🏹"},
+        3: {"name": "Theron Lightbringer", "class": "Cleric", "level": 8, "avatar": "✨"}
+    }
+    
+    adventurer = mock_adventurers.get(adventurer_id)
+    if not adventurer:
+        return RedirectResponse(url="/recruit", status_code=302)
+    
+    return templates.TemplateResponse("adventurer_profile.html", {
+        "request": request,
+        "player": current_player,
+        "game_session": current_player.game_session,
+        "guild": current_player.guild,
+        "adventurer": adventurer
+    })
 
 @app.get("/health")
 async def health():
@@ -68,42 +162,58 @@ async def login(
 ):
     """Handle user login"""
     
-    # Authenticate user
-    player = authenticate_player(db, email, password)
-    if not player:
+    try:
+        logger.info(f"Login attempt for email: {email}")
+        
+        # Authenticate user
+        player = authenticate_player(db, email, password)
+        if not player:
+            logger.warning(f"Failed login attempt for email: {email}")
+            return HTMLResponse(
+                """<div class="error-message" style="display: block;">
+                    ❌ Invalid email or password. Please try again.
+                </div>""",
+                status_code=400
+            )
+        
+        logger.info(f"Successful login for player: {player.id}")
+        
+        # Create access token
+        access_token = create_access_token(data={"sub": str(player.id)})
+        
+        # Return success with redirect
+        response = HTMLResponse(
+            """<div style="color: #10b981; text-align: center; padding: 20px;">
+                ✅ Login successful! Redirecting to your guild...
+                <script>
+                    setTimeout(() => {
+                        window.location.href = "/dashboard";
+                    }, 1000);
+                </script>
+            </div>"""
+        )
+        
+        # Set the session cookie
+        response.set_cookie(
+            key="session_token",
+            value=access_token,
+            max_age=30 * 24 * 60 * 60,  # 30 days
+            httponly=True,
+            secure=False,  # Set to True in production with HTTPS
+            samesite="lax"
+        )
+        
+        return response
+        
+    except Exception as e:
+        logger.error(f"Unexpected error during login: {str(e)}")
+        logger.error(f"Full traceback: {traceback.format_exc()}")
         return HTMLResponse(
             """<div class="error-message" style="display: block;">
-                ❌ Invalid email or password. Please try again.
+                ❌ Login failed. Please try again later.
             </div>""",
-            status_code=400
+            status_code=500
         )
-    
-    # Create access token
-    access_token = create_access_token(data={"sub": str(player.id)})
-    
-    # Return success with redirect
-    response = HTMLResponse(
-        """<div style="color: #10b981; text-align: center; padding: 20px;">
-            ✅ Login successful! Redirecting to your guild...
-            <script>
-                setTimeout(() => {
-                    window.location.href = "/dashboard";
-                }, 1000);
-            </script>
-        </div>"""
-    )
-    
-    # Set the session cookie
-    response.set_cookie(
-        key="session_token",
-        value=access_token,
-        max_age=30 * 24 * 60 * 60,  # 30 days
-        httponly=True,
-        secure=False,  # Set to True in production with HTTPS
-        samesite="lax"
-    )
-    
-    return response
 
 @app.post("/api/auth/register")
 async def register(
@@ -137,6 +247,8 @@ async def register(
         )
     
     try:
+        logger.info(f"Starting registration process for email: {email}, username: {username}")
+        
         # Create new player (this also creates the game session and guild)
         player = create_player(
             db=db,
@@ -147,6 +259,8 @@ async def register(
             corporate_class=corporate_class,
             guild_name=guild_name
         )
+        
+        logger.info(f"Player created successfully: {player.id}")
         
         # Create access token
         access_token = create_access_token(data={"sub": str(player.id)})
@@ -175,9 +289,11 @@ async def register(
             samesite="lax"
         )
         
+        logger.info(f"Registration completed successfully for player: {player.id}")
         return response
         
     except HTTPException as e:
+        logger.error(f"HTTP Exception during registration: {e.status_code} - {e.detail}")
         return HTMLResponse(
             f"""<div class="error-message" style="display: block;">
                 ❌ {e.detail}
@@ -185,9 +301,11 @@ async def register(
             status_code=e.status_code
         )
     except Exception as e:
+        logger.error(f"Unexpected error during registration: {str(e)}")
+        logger.error(f"Full traceback: {traceback.format_exc()}")
         return HTMLResponse(
-            """<div class="error-message" style="display: block;">
-                ❌ Registration failed. Please try again later.
+            f"""<div class="error-message" style="display: block;">
+                ❌ Registration failed: {str(e)}. Please try again later.
             </div>""",
             status_code=500
         )
@@ -198,6 +316,27 @@ async def logout():
     response = RedirectResponse(url="/", status_code=302)
     response.delete_cookie(key="session_token")
     return response
+
+# Time Management API Routes
+@app.post("/api/advance-week")
+async def advance_week(
+    request: Request,
+    current_player: Player = Depends(get_current_player_from_cookie),
+    db: Session = Depends(get_db)
+):
+    """Advance the game by one week and redirect to weekly planner"""
+    if not current_player or not current_player.game_session:
+        return RedirectResponse(url="/", status_code=302)
+    
+    # Advance the week and apply interest
+    game_session = current_player.game_session
+    interest_results = game_session.advance_week(db_session=db)
+    
+    # Commit the changes
+    db.commit()
+    
+    # Redirect to weekly planner
+    return RedirectResponse(url="/weekly-planner", status_code=302)
 
 # HTMX API Routes
 @app.post("/api/actions/recruit")

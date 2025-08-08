@@ -138,6 +138,15 @@
             opacity: 0.5;
             cursor: not-allowed;
         }
+        .nav-action.logout-btn {
+            background: linear-gradient(135deg, #7f1d1d, #991b1b);
+            border-color: #dc2626;
+        }
+        .nav-action.logout-btn:hover {
+            background: linear-gradient(135deg, #991b1b, #b91c1c);
+            transform: translate(-1px, -1px);
+            box-shadow: 2px 2px 0 #7f1d1d;
+        }
 
         .action-icon {
             font-size: 16px;
@@ -155,6 +164,18 @@
             padding: 20px;
             max-width: 1200px;
             margin: 0 auto;
+        }
+        
+        /* Compact layout when no feed */
+        .main-layout.compact {
+            grid-template-columns: 1fr;
+            max-width: 600px;
+            justify-items: center;
+        }
+        
+        .guild-sidebar.centered {
+            width: 100%;
+            max-width: 400px;
         }
 
         /* Guild Sidebar */
@@ -629,19 +650,17 @@
     <nav class="top-nav">
         <div class="nav-left">
             <div class="brand-section">
-                <div class="logo">🏰</div>
-                <div class="brand-name">GuildedIn</div>
+                <a href="/" style="display: flex; align-items: center; gap: 8px; text-decoration: none; color: inherit;">
+                    <div class="logo">🏰</div>
+                    <div class="brand-name">GuildedIn</div>
+                </a>
             </div>
-            <div class="nav-links">
-                <a href="/dashboard" class="nav-link active" hx-get="/dashboard" hx-target="body" hx-swap="innerHTML">Home</a>
-                <a href="#" class="nav-link">Guilds</a>
-                <a href="/dungeons/marketplace" class="nav-link" hx-get="/dungeons/marketplace" hx-target="body" hx-swap="innerHTML">Dungeons</a>
-                <a href="#" class="nav-link">Profile</a>
-            </div>
+            {% if not game_session.should_show_activity_feed %}
             <div class="calendar-display" id="calendar-display">
-                <span class="game-date">Day 42 • Q4 2024</span>
-                <span class="game-phase">Morning Planning</span>
+                <span class="game-date">{{ game_session.game_date_display }}</span>
+                <span class="game-phase">Planning Phase</span>
             </div>
+            {% endif %}
         </div>
         <div class="nav-actions">
             <button class="nav-action" hx-post="/api/actions/recruit" hx-target="#guild-resources" hx-swap="outerHTML">
@@ -668,38 +687,68 @@
                 <span class="action-icon">✨</span>
                 <span class="action-name">EXP</span>
             </button>
+            <form method="post" action="/api/auth/logout" style="display: inline;">
+                <button type="submit" class="nav-action logout-btn" onclick="return confirm('Are you sure you want to logout?')">
+                    <span class="action-icon">🚪</span>
+                    <span class="action-name">Logout</span>
+                </button>
+            </form>
         </div>
     </nav>
 
     <!-- Main Layout Container -->
-    <div class="main-layout">
+    <div class="main-layout{% if not game_session.should_show_activity_feed %} compact{% endif %}">
         <!-- Left Sidebar - Guild Resources -->
-        <aside class="guild-sidebar" id="guild-resources">
+        <aside class="guild-sidebar{% if not game_session.should_show_activity_feed %} centered{% endif %}" id="guild-resources">
             <div class="ceo-profile">
                 <div class="ceo-avatar">👨‍💼</div>
-                <h2 class="ceo-name">Alex Rodriguez</h2>
-                <p class="ceo-title">CEO of TechCorp Guild</p>
+                <h2 class="ceo-name">{{ player.display_name }}</h2>
+                <p class="ceo-title">CEO of {{ guild.name }}</p>
                 <div class="ceo-background">
-                    <span class="background-badge">⚔️ Warrior</span>
+                    <span class="background-badge">
+                        {% if player.corporate_class.value == 'hr_manager' %}
+                            👥 HR Manager
+                        {% elif player.corporate_class.value == 'pr_manager' %}
+                            📢 PR Manager
+                        {% elif player.corporate_class.value == 'asset_manager' %}
+                            💰 Asset Manager
+                        {% elif player.corporate_class.value == 'wellness_manager' %}
+                            🏥 Wellness Manager
+                        {% else %}
+                            💼 {{ player.corporate_class.value.replace('_', ' ').title() }}
+                        {% endif %}
+                    </span>
                 </div>
             </div>
             
             <div class="resource-stats">
                 <div class="stat-item">
                     <span class="stat-label">💰 Gold</span>
-                    <span class="stat-value">4750</span>
+                    <span class="stat-value">{{ "{:,}".format(guild.gold) }}</span>
                 </div>
                 <div class="stat-item">
-                    <span class="stat-label">✨ EXP Bank</span>
-                    <span class="stat-value">2,340</span>
+                    <span class="stat-label">✨ EXP</span>
+                    <span class="stat-value">{{ "{:,}".format(guild.exp) }}</span>
                 </div>
                 <div class="stat-item">
                     <span class="stat-label">📈 Share Price</span>
-                    <span class="stat-value">147.5G</span>
+                    <span class="stat-value">{{ "%.1f"|format(guild.share_price) }}G</span>
                 </div>
                 <div class="stat-item">
                     <span class="stat-label">🏆 Guild Rank</span>
-                    <span class="stat-value rank-c">C</span>
+                    {% if guild.share_price >= 800 %}
+                        <span class="stat-value rank-s">S</span>
+                    {% elif guild.share_price >= 401 %}
+                        <span class="stat-value rank-a">A</span>
+                    {% elif guild.share_price >= 201 %}
+                        <span class="stat-value rank-b">B</span>
+                    {% elif guild.share_price >= 101 %}
+                        <span class="stat-value rank-c">C</span>
+                    {% elif guild.share_price >= 51 %}
+                        <span class="stat-value rank-d">D</span>
+                    {% else %}
+                        <span class="stat-value rank-e">E</span>
+                    {% endif %}
                 </div>
             </div>
 
@@ -720,46 +769,168 @@
             </div>
         </aside>
 
+        {% if game_session.should_show_activity_feed %}
         <!-- Center Feed -->
         <main class="feed-container" id="main-content">
-            <!-- Turn Summary - Always First Post -->
+            <!-- Week Info and Next Week Button Header -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; padding: 18px 24px; background: linear-gradient(135deg, #1f2937, #111827); border: 2px solid #374151; border-top: 4px solid #f59e0b; border-radius: 6px; box-shadow: 0 4px 8px rgba(0,0,0,0.3);">
+                <div style="display: flex; flex-direction: column; gap: 6px;">
+                    <div style="font-family: 'Press Start 2P', monospace; font-size: 14px; color: #fbbf24; text-shadow: 2px 2px 0 #92400e; letter-spacing: 1px;">
+                        {{ game_session.game_date_display }}
+                    </div>
+                    <div style="font-size: 13px; color: #9ca3af; text-shadow: 1px 1px 0 rgba(0,0,0,0.5); font-style: italic;">
+                        Planning Phase
+                    </div>
+                </div>
+                <button 
+                    class="next-week-btn" 
+                    hx-post="/api/advance-week" 
+                    hx-target="body" 
+                    hx-swap="innerHTML"
+                    style="
+                        background: linear-gradient(135deg, #f59e0b, #d97706);
+                        border: 3px solid #92400e;
+                        color: #ffffff;
+                        font-family: 'Press Start 2P', monospace;
+                        font-size: 10px;
+                        padding: 12px 20px;
+                        cursor: pointer;
+                        text-shadow: 1px 1px 0 #92400e;
+                        box-shadow: 
+                            inset -2px -2px 0 rgba(0,0,0,0.3),
+                            inset 2px 2px 0 rgba(255,255,255,0.2),
+                            3px 3px 6px rgba(0,0,0,0.5);
+                        transition: all 0.1s ease;
+                        letter-spacing: 1px;
+                    "
+                    onmouseover="this.style.transform='translate(-1px, -1px)'; this.style.boxShadow='inset -2px -2px 0 rgba(0,0,0,0.3), inset 2px 2px 0 rgba(255,255,255,0.2), 4px 4px 8px rgba(0,0,0,0.6)'"
+                    onmouseout="this.style.transform='translate(0, 0)'; this.style.boxShadow='inset -2px -2px 0 rgba(0,0,0,0.3), inset 2px 2px 0 rgba(255,255,255,0.2), 3px 3px 6px rgba(0,0,0,0.5)'"
+                >
+                    {% if game_session.is_tutorial_week %}
+                        🚀 Start Adventure
+                    {% else %}
+                        📅 Next Week
+                    {% endif %}
+                </button>
+            </div>
+            {% if game_session.is_tutorial_week %}
+            <!-- Tutorial Content for New Players (Week 1, Q1, Year 1) -->
+            <article class="activity-post turn-summary">
+                <div class="post-inner">
+                    <div class="post-header">
+                        <div class="avatar">🎓</div>
+                        <div class="post-meta">
+                            <div class="author-name">GuildedIn Tutorial</div>
+                            <div class="timestamp">Welcome Guide</div>
+                        </div>
+                    </div>
+                    
+                    <h2 class="post-title">🏰 Welcome to GuildedIn!</h2>
+                    <div class="briefing-content">
+                        <div class="briefing-section">
+                            <h4>🎯 Your Mission:</h4>
+                            <ul class="briefing-list">
+                                <li>• Build and manage your guild to increase share price</li>
+                                <li>• Recruit adventurers and train them for dungeon expeditions</li>
+                                <li>• Upgrade facilities to boost efficiency and unlock new abilities</li>
+                                <li>• Compete with AI guilds for market dominance</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="briefing-section">
+                            <h4>⚡ Weekly Action System:</h4>
+                            <ul class="briefing-list">
+                                <li>• You get 5 actions per week (upgradeable)</li>
+                                <li>• Use actions to: Recruit, Train, Upgrade, or Enter Dungeons</li>
+                                <li>• Time advances automatically after spending actions</li>
+                                <li>• Resources earn interest each week</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </article>
+            
+            <article class="activity-post">
+                <div class="post-inner">
+                    <div class="post-header">
+                        <div class="avatar">💰</div>
+                        <div class="post-meta">
+                            <div class="author-name">Resource Management 101</div>
+                            <div class="timestamp">Tutorial Guide</div>
+                        </div>
+                    </div>
+                    
+                    <h2 class="post-title">💎 Understanding Your Resources</h2>
+                    <div class="post-content">
+                        <strong>Gold (💰):</strong> Your primary currency for hiring, upgrading, and operations. Earns 5% weekly interest.<br><br>
+                        <strong>EXP (✨):</strong> Experience points for training adventurers and unlocking abilities. Also earns 5% weekly interest.<br><br>
+                        <strong>Share Price (📈):</strong> Your guild's market valuation. Higher prices unlock better ranks (E→D→C→B→A→S).<br><br>
+                        <strong>Guild Rank (🏆):</strong> Your standing in the market. Higher ranks provide prestige and access to exclusive content.
+                    </div>
+                </div>
+            </article>
+            
+            <article class="activity-post">
+                <div class="post-inner">
+                    <div class="post-header">
+                        <div class="avatar">⚔️</div>
+                        <div class="post-meta">
+                            <div class="author-name">Strategy Tips</div>
+                            <div class="timestamp">Pro Guide</div>
+                        </div>
+                    </div>
+                    
+                    <h2 class="post-title">🎯 Your First Steps</h2>
+                    <div class="post-content">
+                        <strong>Week 1 Strategy:</strong><br>
+                        1. Use the action buttons above to start your guild management<br>
+                        2. Try recruiting your first adventurer<br>
+                        3. Experiment with training to improve their stats<br>
+                        4. Consider upgrading a facility for long-term benefits<br>
+                        5. When ready, attempt your first dungeon expedition<br><br>
+                        <em>Remember: Each action advances time, so plan wisely!</em>
+                    </div>
+                </div>
+            </article>
+            
+            {% elif game_session.is_quarterly_briefing_week %}
+            <!-- Quarterly Briefing Content (Week 14 of any quarter) -->
             <article class="activity-post turn-summary">
                 <div class="post-inner">
                     <div class="post-header">
                         <div class="avatar">📊</div>
                         <div class="post-meta">
-                            <div class="author-name">TechCorp Guild</div>
-                            <div class="timestamp">Daily Briefing</div>
+                            <div class="author-name">{{ guild.name }}</div>
+                            <div class="timestamp">Quarterly Report</div>
                         </div>
                     </div>
                     
-                    <h2 class="post-title">🏰 Daily Briefing - Day 42</h2>
+                    <h2 class="post-title">🏰 Q{{ game_session.current_quarter }} Year {{ game_session.current_year }} - Executive Summary</h2>
                     <div class="briefing-content">
                         <div class="briefing-section">
-                            <h4>📊 Today's Results:</h4>
+                            <h4>📊 Quarter Performance:</h4>
                             <ul class="briefing-list">
-                                <li>• Recruited: Sarah (Healer, Lv.3) - Cost: 800G</li>
-                                <li>• Training: Mike gained 2 Strength levels</li>
-                                <li>• Dungeon: Ancient Ruins cleared - Earned 1,500G</li>
-                                <li>• Facilities: Training Grounds upgraded to Lv.3</li>
+                                <li>• Current Guild Rank: {{ "S" if guild.share_price >= 800 else "A" if guild.share_price >= 401 else "B" if guild.share_price >= 201 else "C" if guild.share_price >= 101 else "D" if guild.share_price >= 51 else "E" }}</li>
+                                <li>• Share Price: {{ "%.1f"|format(guild.share_price) }}G</li>
+                                <li>• Gold Treasury: {{ "{:,}".format(guild.gold) }}</li>
+                                <li>• EXP Bank: {{ "{:,}".format(guild.exp) }}</li>
                             </ul>
                         </div>
                         
                         <div class="briefing-section">
-                            <h4>💰 Resource Changes:</h4>
+                            <h4>💰 Weekly Interest Earned:</h4>
                             <div class="resource-changes">
-                                <span class="change-positive">+500G</span> •
-                                <span class="change-positive">+250 EXP</span> •
-                                <span class="change-positive">+12.5G/share (+9.2%)</span>
+                                <span class="change-positive">+{{ "{:,}".format((guild.gold * guild.gold_interest_rate // 100)) }}G Interest</span> •
+                                <span class="change-positive">+{{ "{:,}".format((guild.exp * guild.exp_interest_rate // 100)) }} EXP Interest</span>
                             </div>
                         </div>
                         
                         <div class="briefing-section">
-                            <h4>✨ EXP Management:</h4>
+                            <h4>🎯 Next Quarter Goals:</h4>
                             <ul class="briefing-list">
-                                <li>• 250 EXP earned from dungeon added to bank</li>
-                                <li>• 100 EXP distributed to Mike (Fighter)</li>
-                                <li>• 500 EXP reserved earning 5% daily interest</li>
+                                <li>• Focus on strategic growth and market positioning</li>
+                                <li>• Monitor competitor activities and adapt strategies</li>
+                                <li>• Consider facility upgrades for competitive advantage</li>
                             </ul>
                         </div>
                     </div>
@@ -770,33 +941,27 @@
             <div class="network-separator">
                 <div class="separator-line"></div>
                 <div class="separator-text">
-                    <span class="network-label">🌐 Network Activity</span>
+                    <span class="network-label">🌐 Market Intelligence</span>
                 </div>
                 <div class="separator-line"></div>
             </div>
 
-            <!-- Market Performance Posts from Bot Guilds -->
+            <!-- Bot Guild Market Activity -->
             <article class="activity-post">
                 <div class="post-inner">
                     <div class="post-header">
                         <div class="avatar">📈</div>
                         <div class="post-meta">
                             <div class="author-name">Marcus Chen - CEO of AdventureCorp</div>
-                            <div class="timestamp">2 hours ago</div>
+                            <div class="timestamp">Q{{ game_session.current_quarter }} Report</div>
                         </div>
                     </div>
                     
-                    <h2 class="post-title">📊 Q4 Performance Exceeds All Expectations!</h2>
-                    <p class="post-content">I'm thrilled to announce AdventureCorp's shares have surged 23% this week following our Dragon's Lair completion! Our aggressive expansion strategy is paying dividends. When others play it safe, we seize opportunity. <span class="hashtag">#DisruptTheMarket</span> <span class="hashtag">#RankAchieved</span></p>
+                    <h2 class="post-title">📊 Aggressive Growth Strategy Paying Off!</h2>
+                    <p class="post-content">AdventureCorp continues our high-risk, high-reward approach this quarter. Our focus on premium dungeon expeditions has yielded impressive returns, though volatility remains high. <span class="hashtag">#AggressiveGrowth</span> <span class="hashtag">#HighRisk</span></p>
                     
                     <div class="post-stats">
-                        📈 Share Price: 287.5G (+23%) • 🏆 Guild Rank: B → A
-                    </div>
-                    
-                    <div class="post-actions">
-                        <button class="action-btn" hx-post="/api/like/1" hx-target="this" hx-swap="outerHTML">👍 18</button>
-                        <button class="action-btn" hx-get="/api/comments/1" hx-target="#comment-modal" hx-swap="innerHTML">💬 7</button>
-                        <button class="action-btn">📤 Share</button>
+                        📈 Market Position: Aggressive Trader • 🎯 Strategy: High-Risk Dungeons
                     </div>
                 </div>
             </article>
@@ -807,75 +972,22 @@
                         <div class="avatar">🧠</div>
                         <div class="post-meta">
                             <div class="author-name">Dr. Sarah Kim - CEO of DataDriven Dynamics</div>
-                            <div class="timestamp">4 hours ago</div>
+                            <div class="timestamp">Q{{ game_session.current_quarter }} Analysis</div>
                         </div>
                     </div>
                     
-                    <h2 class="post-title">📉 Market Analysis: Conservative Approach Pays Off</h2>
-                    <p class="post-content">While others chase risky ventures, our methodical facility investments have yielded steady 3.2% weekly growth. Sometimes the tortoise wins the race. Our upgraded Training Grounds now boost adventurer efficiency by 18%. <span class="hashtag">#DataDriven</span> <span class="hashtag">#SustainableGrowth</span></p>
+                    <h2 class="post-title">📉 Steady Growth Through Smart Investments</h2>
+                    <p class="post-content">Our conservative facility-first approach continues to deliver consistent returns. While flashier competitors chase headlines, we build sustainable competitive advantages through infrastructure. <span class="hashtag">#DataDriven</span> <span class="hashtag">#Infrastructure</span></p>
                     
                     <div class="post-stats">
-                        📈 Share Price: 156.3G (+3.2%) • 🏗️ Facility ROI: +18%
-                    </div>
-                    
-                    <div class="post-actions">
-                        <button class="action-btn" hx-post="/api/like/2" hx-target="this" hx-swap="outerHTML">👍 14</button>
-                        <button class="action-btn" hx-get="/api/comments/2" hx-target="#comment-modal" hx-swap="innerHTML">💬 9</button>
-                        <button class="action-btn">📤 Share</button>
+                        📈 Market Position: Conservative Builder • 🎯 Strategy: Facility Optimization
                     </div>
                 </div>
             </article>
-
-            <article class="activity-post">
-                <div class="post-inner">
-                    <div class="post-header">
-                        <div class="avatar">🎭</div>
-                        <div class="post-meta">
-                            <div class="author-name">Victoria Sterling - CEO of Elite Endeavors</div>
-                            <div class="timestamp">6 hours ago</div>
-                        </div>
-                    </div>
-                    
-                    <h2 class="post-title">💎 Exclusive S-Rank Dungeon Access Secured!</h2>
-                    <p class="post-content">Networking pays dividends! Just secured exclusive early access to the Celestial Spire dungeon. While others scramble for scraps, Elite Endeavors dines at the high table. Our share price reflects the premium market position we've earned. <span class="hashtag">#ExclusiveAccess</span> <span class="hashtag">#PremiumGuild</span></p>
-                    
-                    <div class="post-stats">
-                        📈 Share Price: 623.7G (+8.4%) • 🏆 Guild Rank: A
-                    </div>
-                    
-                    <div class="post-actions">
-                        <button class="action-btn" hx-post="/api/like/3" hx-target="this" hx-swap="outerHTML">👍 31</button>
-                        <button class="action-btn" hx-get="/api/comments/3" hx-target="#comment-modal" hx-swap="innerHTML">💬 12</button>
-                        <button class="action-btn">📤 Share</button>
-                    </div>
-                </div>
-            </article>
-
-            <article class="activity-post">
-                <div class="post-inner">
-                    <div class="post-header">
-                        <div class="avatar">🏢</div>
-                        <div class="post-meta">
-                            <div class="author-name">Innovation Labs</div>
-                            <div class="timestamp">1 day ago</div>
-                        </div>
-                    </div>
-                    
-                    <h2 class="post-title">🏢 Facility Enhancement Complete!</h2>
-                    <p class="post-content">Our Training Grounds have been upgraded to Level 3! This enhanced facility now provides +25% training efficiency and unlocks advanced combat techniques. Investment: 2,500 gold. The improved equipment will greatly benefit our adventurers.</p>
-                    
-                    <div class="post-stats">
-                        💸 -2500G • +25% training efficiency
-                    </div>
-                    
-                    <div class="post-actions">
-                        <button class="action-btn" hx-post="/api/like/4" hx-target="this" hx-swap="outerHTML">👍 20</button>
-                        <button class="action-btn" hx-get="/api/comments/4" hx-target="#comment-modal" hx-swap="innerHTML">💬 7</button>
-                        <button class="action-btn">📤 Share</button>
-                    </div>
-                </div>
-            </article>
+            
+            {% endif %}
         </main>
+        {% endif %}
     </div>
 
     <!-- Hidden modal for comments -->

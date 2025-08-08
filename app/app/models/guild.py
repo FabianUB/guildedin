@@ -1,86 +1,113 @@
-from sqlalchemy import Column, Integer, String, DateTime, Text, JSON, Boolean, ForeignKey, Float, Enum
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Float
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-from enum import Enum as PyEnum
 from .database import Base
 
-class GuildRank(PyEnum):
-    E = "E"  # 0-50 gold/share - New/struggling guilds
-    D = "D"  # 51-100 gold/share - Developing guilds  
-    C = "C"  # 101-200 gold/share - Established guilds
-    B = "B"  # 201-400 gold/share - Successful guilds
-    A = "A"  # 401-800 gold/share - Elite guilds
-    S = "S"  # 800+ gold/share - Legendary guilds
-
 class Guild(Base):
-    """Player's managed company/guild with facilities and resources"""
+    """Player's managed guild/company within their game session"""
     __tablename__ = "guilds"
 
     id = Column(Integer, primary_key=True, index=True)
-    game_session_id = Column(Integer, ForeignKey("game_sessions.id"), nullable=False, index=True)  # SESSION ISOLATION
-    name = Column(String, nullable=False)  # Removed unique constraint - unique per session instead
-    slug = Column(String, nullable=False)  # URL-friendly name
+    name = Column(String, nullable=False)
+    owner_id = Column(Integer, ForeignKey("players.id"), nullable=False, unique=True)
+    game_session_id = Column(Integer, ForeignKey("game_sessions.id"), nullable=False, unique=True)  # Session isolation
     
-    # Company/Guild Info (LinkedIn Company Page parody)
-    tagline = Column(String)  # "Connecting top-tier adventurers since 2024"
-    description = Column(Text)  # About the company/guild
-    industry = Column(String)  # "Dungeon Consulting", "Quest Management"
-    headquarters = Column(String)  # Location
-    company_size = Column(String)  # "11-50 adventurers", "501-1000 employees"
+    # Core Resources
+    gold = Column(Integer, default=5000)  # Primary currency
+    gold_interest_rate = Column(Integer, default=5)  # 5% weekly interest (upgradeable)
     
-    # Guild Stats & Metrics
-    guild_level = Column(Integer, default=1)
-    experience = Column(Integer, default=0)
-    total_dungeons_completed = Column(Integer, default=0)
+    exp = Column(Integer, default=0)  # Experience points (earns weekly interest)
+    exp_interest_rate = Column(Integer, default=5)  # 5% weekly interest on EXP
     
-    # Stock Market System
-    share_price = Column(Float, default=100.0)  # Starting price: 100 gold/share
-    guild_rank = Column(Enum(GuildRank), default=GuildRank.D)
-    shares_outstanding = Column(Integer, default=1000)  # Total shares for market cap calculation
-    daily_price_change = Column(Float, default=0.0)  # Today's price change %
-    weekly_price_change = Column(Float, default=0.0)  # 7-day price change %
-    all_time_high = Column(Float, default=100.0)  # Highest share price achieved
-    all_time_low = Column(Float, default=100.0)  # Lowest share price achieved
-    last_price_update = Column(DateTime(timezone=True))  # When price was last updated
-    
-    # Resources
-    gold = Column(Integer, default=5000)  # Guild treasury
-    influence_points = Column(Integer, default=0)  # Special currency for upgrades
-    
-    # EXP Banking System
-    exp_bank = Column(Integer, default=0)  # Unallocated EXP points from dungeons
-    exp_reserved = Column(Integer, default=0)  # EXP earning interest
-    exp_interest_rate = Column(Integer, default=5)  # 5% daily interest on reserved EXP
-    last_interest_calculation = Column(DateTime(timezone=True))  # Track interest timing
-    
-    # Visual Customization
-    logo_url = Column(String)
-    banner_url = Column(String) 
-    banner_color = Column(String, default="#6366F1")  # Fantasy indigo
-    
-    # Guild Culture & Values (LinkedIn company culture)
-    core_values = Column(JSON, default=list)  # ["Innovation", "Teamwork", "Results-Driven"]
-    perks_benefits = Column(JSON, default=list)  # ["Health Potions", "Flexible Quest Hours"]
-    
-    # Guild Ownership (one-to-one with Player OR Bot CEO)
-    owner_id = Column(Integer, ForeignKey("players.id"), nullable=True, unique=True)  # Null for bot guilds
-    bot_ceo_id = Column(Integer, ForeignKey("bot_ceo_personalities.id"), nullable=True, unique=True)  # Null for player guilds
-    
-    # Status
-    is_active = Column(Boolean, default=True)
-    is_verified = Column(Boolean, default=False)  # Verified company checkmark
-    is_recruiting = Column(Boolean, default=True)  # Looking for adventurers
+    # Share Price & Market Performance
+    share_price = Column(Float, default=1.0)  # Starting share price: 1G (lowest rank)
     
     # Timestamps
-    founded_date = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     # Relationships
-    game_session = relationship("GameSession", back_populates="player_guild")
     owner = relationship("Player", back_populates="guild")
-    bot_ceo = relationship("BotCEOPersonality", back_populates="current_guild", uselist=False)
+    game_session = relationship("GameSession", back_populates="guild")
     adventurers = relationship("Adventurer", back_populates="guild")
-    facilities = relationship("GuildFacility", back_populates="guild")
-    activities = relationship("Activity", back_populates="guild")
-    current_run = relationship("GameRun", back_populates="guild", uselist=False)
-    stock_history = relationship("StockPriceHistory", back_populates="guild")
+    
+    def calculate_gold_interest(self):
+        """Calculate weekly interest on current gold"""
+        return int(self.gold * (self.gold_interest_rate / 100.0))
+    
+    def calculate_exp_interest(self):
+        """Calculate weekly interest on EXP"""
+        return int(self.exp * (self.exp_interest_rate / 100.0))
+    
+    def apply_weekly_interest(self):
+        """Apply weekly interest to both gold and EXP"""
+        gold_interest = self.calculate_gold_interest()
+        exp_interest = self.calculate_exp_interest()
+        
+        self.gold += gold_interest
+        self.exp += exp_interest
+        
+        return {
+            "gold_interest": gold_interest,
+            "exp_interest": exp_interest,
+            "new_gold_total": self.gold,
+            "new_exp_total": self.exp
+        }
+    
+    def get_guild_rank(self):
+        """Calculate guild rank based on share price tiers from GDD"""
+        if self.share_price >= 800:
+            return "S"
+        elif self.share_price >= 401:
+            return "A"
+        elif self.share_price >= 201:
+            return "B"
+        elif self.share_price >= 101:
+            return "C"
+        elif self.share_price >= 51:
+            return "D"
+        else:
+            return "E"
+    
+    def get_rank_description(self):
+        """Get human-readable description of guild rank"""
+        rank = self.get_guild_rank()
+        descriptions = {
+            "S": "Market Leader",
+            "A": "Elite",
+            "B": "Successful",
+            "C": "Established",
+            "D": "Growth Phase",
+            "E": "Startup Phase"
+        }
+        return descriptions.get(rank, "Unknown")
+    
+    def get_formatted_share_price(self):
+        """Get formatted share price string for display"""
+        return f"{self.share_price:.1f}G"
+    
+    def get_max_adventurers(self):
+        """Get maximum adventurers allowed based on guild rank"""
+        rank = self.get_guild_rank()
+        max_adventurers = {
+            "E": 3,  # Startup guilds get 3 slots
+            "D": 4,  # Growth phase gets 4 slots
+            "C": 5,  # Established gets 5 slots
+            "B": 6,  # Successful gets 6 slots
+            "A": 8,  # Elite gets 8 slots
+            "S": 10  # Market leaders get 10 slots
+        }
+        return max_adventurers.get(rank, 3)
+    
+    def get_current_adventurer_count(self):
+        """Get current number of recruited adventurers"""
+        return len(self.adventurers) if self.adventurers else 0
+    
+    def can_recruit_more_adventurers(self):
+        """Check if guild can recruit more adventurers"""
+        return self.get_current_adventurer_count() < self.get_max_adventurers()
+    
+    def get_adventurers_by_role(self, role):
+        """Get adventurers filtered by their role (dps, tank, support)"""
+        if not self.adventurers:
+            return []
+        return [adv for adv in self.adventurers if adv.role == role]

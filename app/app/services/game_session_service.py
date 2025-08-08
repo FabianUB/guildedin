@@ -184,7 +184,7 @@ class GameSessionService:
             activity_data={
                 "type": "company_launch",
                 "initial_investment": bot_guild.gold,
-                "founding_vision": bot_guild.personality_description
+                "founding_vision": f"{bot_guild.personality_type.value} personality"
             },
             was_successful=True,
             success_score=55.0,
