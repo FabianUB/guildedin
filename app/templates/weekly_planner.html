@@ -87,12 +87,35 @@
             margin-bottom: 12px;
         }
         
+        .adventurer-name-section {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            flex: 1;
+        }
+        
+        .adventurer-avatar {
+            font-size: 24px;
+            line-height: 1;
+            margin-top: 2px;
+        }
+        
+        .adventurer-name-info {
+            flex: 1;
+        }
+        
         .adventurer-name {
             font-family: 'Press Start 2P', monospace;
-            font-size: 11px;
+            font-size: 12px;
             color: #fbbf24;
             text-shadow: 1px 1px 0 #92400e;
-            margin: 0;
+            margin: 0 0 6px 0;
+            line-height: 1.2;
+        }
+        
+        .adventurer-badges {
+            display: flex;
+            gap: 4px;
         }
         
         .adventurer-level {
@@ -102,16 +125,9 @@
             text-shadow: 1px 1px 0 #064e3b;
         }
         
-        .adventurer-info {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-bottom: 12px;
-        }
-        
         .info-badge {
-            font-size: 10px;
-            padding: 2px 6px;
+            font-size: 8px;
+            padding: 2px 4px;
             border-radius: 2px;
             font-family: 'Press Start 2P', monospace;
         }
@@ -122,29 +138,73 @@
             text-shadow: 1px 1px 0 #1e3a8a;
         }
         
-        .role-badge {
-            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
-            color: #ede9fe;
-            text-shadow: 1px 1px 0 #5b21b6;
-        }
-        
         .seniority-badge {
             background: linear-gradient(135deg, #f59e0b, #d97706);
             color: #1f2937;
             text-shadow: 1px 1px 0 #92400e;
         }
         
-        .adventurer-stats {
+        /* Key Stats Layout */
+        .key-stats {
             display: flex;
-            justify-content: space-between;
-            font-size: 12px;
+            gap: 8px;
+            margin-top: 8px;
         }
         
-        .hp-stat {
+        .key-stat {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            flex: 1;
+            padding: 6px;
+            background: linear-gradient(135deg, rgba(55, 65, 81, 0.5), rgba(31, 41, 55, 0.5));
+            border: 1px solid #4b5563;
+            border-radius: 4px;
+            min-width: 0;
+            overflow: hidden;
+        }
+        
+        .stat-icon {
+            font-size: 16px;
+            line-height: 1;
+            flex-shrink: 0;
+        }
+        
+        .stat-info {
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+            min-width: 0;
+            flex: 1;
+        }
+        
+        .stat-value {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 8px;
+            font-weight: bold;
+            line-height: 1.1;
+            word-break: break-word;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .stat-label {
+            font-size: 6px;
+            color: #9ca3af;
+            font-family: 'Press Start 2P', monospace;
+            text-transform: uppercase;
+            line-height: 1;
+        }
+        
+        .hp-stat .stat-value {
             color: #ef4444;
         }
         
-        .level-stat {
+        .salary-stat .stat-value {
+            color: #fbbf24;
+        }
+        
+        .exp-stat .stat-value {
             color: #10b981;
         }
     </style>
@@ -174,19 +234,43 @@
                                 <!-- Filled Slot -->
                                 <div class="adventurer-slot filled-slot">
                                     <div class="adventurer-header">
-                                        <h3 class="adventurer-name">{{ adventurer.name }}</h3>
+                                        <div class="adventurer-name-section">
+                                            <span class="adventurer-avatar">{{ adventurer.class_emoji }}</span>
+                                            <div class="adventurer-name-info">
+                                                <h3 class="adventurer-name">{{ adventurer.name }}</h3>
+                                                <div class="adventurer-badges">
+                                                    <span class="info-badge class-badge">{{ adventurer.adventurer_class.title() }}</span>
+                                                    <span class="info-badge seniority-badge">{{ adventurer.seniority.title() }}</span>
+                                                </div>
+                                            </div>
+                                        </div>
                                         <span class="adventurer-level">LVL {{ adventurer.level }}</span>
                                     </div>
                                     
-                                    <div class="adventurer-info">
-                                        <span class="info-badge class-badge">{{ adventurer.adventurer_class.title() }}</span>
-                                        <span class="info-badge role-badge">{{ adventurer.role.upper() }}</span>
-                                        <span class="info-badge seniority-badge">{{ adventurer.seniority.title() }}</span>
-                                    </div>
-                                    
-                                    <div class="adventurer-stats">
-                                        <span class="hp-stat">❤️ {{ adventurer.current_hp }}/{{ adventurer.max_hp }}</span>
-                                        <span class="level-stat">⭐ {{ adventurer.level }}</span>
+                                    <div class="key-stats">
+                                        <div class="key-stat hp-stat">
+                                            <div class="stat-icon">❤️</div>
+                                            <div class="stat-info">
+                                                <div class="stat-value">{{ adventurer.current_hp }}/{{ adventurer.max_hp }}</div>
+                                                <div class="stat-label">Health</div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="key-stat salary-stat">
+                                            <div class="stat-icon">💳</div>
+                                            <div class="stat-info">
+                                                <div class="stat-value">{{ "{:,}".format(adventurer.weekly_salary) }}G</div>
+                                                <div class="stat-label">Weekly Cost</div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="key-stat exp-stat">
+                                            <div class="stat-icon">⭐</div>
+                                            <div class="stat-info">
+                                                <div class="stat-value">{{ adventurer.experience_to_next_level() }}</div>
+                                                <div class="stat-label">EXP to Next</div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             {% else %}

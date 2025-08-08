@@ -260,6 +260,33 @@ class Adventurer(Base):
         """Check if adventurer is in critical condition"""
         return self.current_hp <= (self.max_hp * 0.25)
     
+    def experience_to_next_level(self):
+        """Calculate EXP needed to reach next level using RuneScape-style formula"""
+        if self.level >= 100:
+            return "MAX"
+        
+        current_level_xp = self.get_xp_for_level(self.level)
+        next_level_xp = self.get_xp_for_level(self.level + 1)
+        
+        # For now, assume adventurer has just reached current level (0 progress)
+        # In full implementation, we'd track current_experience
+        xp_needed = next_level_xp - current_level_xp
+        
+        return f"{xp_needed:,}"
+    
+    @staticmethod
+    def get_xp_for_level(level):
+        """Get total XP required to reach a specific level (RuneScape formula)"""
+        if level <= 1:
+            return 0
+        
+        # RuneScape formula: sum of ((level-1)^2 * 100 / 4) for each level
+        total_xp = 0
+        for i in range(2, level + 1):
+            total_xp += int((i - 1) ** 2 * 100 / 4)
+        
+        return total_xp
+    
     def heal(self, amount):
         """Heal the adventurer by specified amount"""
         self.current_hp = min(self.current_hp + amount, self.max_hp)

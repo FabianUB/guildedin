@@ -61,6 +61,18 @@ logs
 # Database
 *.db
 *.sqlite
+*.sqlite3
+guildedin.db
+
+# FastAPI specific
+app/.venv/
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Alembic backup files
+alembic.ini.backup
 
 # IDE
 .vscode/
@@ -81,3 +93,8 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.temp
+
+# Development documentation (keep local only)
+CLAUDE.md
+DATABASE_DIAGRAM.md
+GDD.md
