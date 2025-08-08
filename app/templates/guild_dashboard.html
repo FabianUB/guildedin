@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GuildedIn - Guild Dashboard</title>
     <link href="https://fonts.googleapis.com/css2?family=VT323&family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/components.css">
     <script src="https://unpkg.com/htmx.org@1.9.10/dist/htmx.min.js"></script>
     <style>
         * {
@@ -646,128 +647,13 @@
 <body>
     <div class="scanlines"></div>
 
-    <!-- Top Navigation Bar -->
-    <nav class="top-nav">
-        <div class="nav-left">
-            <div class="brand-section">
-                <a href="/" style="display: flex; align-items: center; gap: 8px; text-decoration: none; color: inherit;">
-                    <div class="logo">🏰</div>
-                    <div class="brand-name">GuildedIn</div>
-                </a>
-            </div>
-            {% if not game_session.should_show_activity_feed %}
-            <div class="calendar-display" id="calendar-display">
-                <span class="game-date">{{ game_session.game_date_display }}</span>
-                <span class="game-phase">Planning Phase</span>
-            </div>
-            {% endif %}
-        </div>
-        <div class="nav-actions">
-            <button class="nav-action" hx-post="/api/actions/recruit" hx-target="#guild-resources" hx-swap="outerHTML">
-                <span class="action-icon">👥</span>
-                <span class="action-name">Recruit</span>
-            </button>
-            <button class="nav-action" hx-post="/api/actions/train" hx-target="#guild-resources" hx-swap="outerHTML">
-                <span class="action-icon">💪</span>
-                <span class="action-name">Train</span>
-            </button>
-            <button class="nav-action" hx-get="/dungeons/active" hx-target="body" hx-swap="innerHTML">
-                <span class="action-icon">⚔️</span>
-                <span class="action-name">Dungeon</span>
-            </button>
-            <button class="nav-action" hx-post="/api/actions/upgrade" hx-target="#guild-resources" hx-swap="outerHTML">
-                <span class="action-icon">🔧</span>
-                <span class="action-name">Upgrade</span>
-            </button>
-            <button class="nav-action" hx-get="/api/market" hx-target="#main-content" hx-swap="innerHTML">
-                <span class="action-icon">💰</span>
-                <span class="action-name">Market</span>
-            </button>
-            <button class="nav-action" hx-get="/api/exp-management" hx-target="#main-content" hx-swap="innerHTML">
-                <span class="action-icon">✨</span>
-                <span class="action-name">EXP</span>
-            </button>
-            <form method="post" action="/api/auth/logout" style="display: inline;">
-                <button type="submit" class="nav-action logout-btn" onclick="return confirm('Are you sure you want to logout?')">
-                    <span class="action-icon">🚪</span>
-                    <span class="action-name">Logout</span>
-                </button>
-            </form>
-        </div>
-    </nav>
+    {% set page_title = "Activity Feed" %}
+    {% include 'components/topbar.html' %}
 
     <!-- Main Layout Container -->
-    <div class="main-layout{% if not game_session.should_show_activity_feed %} compact{% endif %}">
-        <!-- Left Sidebar - Guild Resources -->
-        <aside class="guild-sidebar{% if not game_session.should_show_activity_feed %} centered{% endif %}" id="guild-resources">
-            <div class="ceo-profile">
-                <div class="ceo-avatar">👨‍💼</div>
-                <h2 class="ceo-name">{{ player.display_name }}</h2>
-                <p class="ceo-title">CEO of {{ guild.name }}</p>
-                <div class="ceo-background">
-                    <span class="background-badge">
-                        {% if player.corporate_class.value == 'hr_manager' %}
-                            👥 HR Manager
-                        {% elif player.corporate_class.value == 'pr_manager' %}
-                            📢 PR Manager
-                        {% elif player.corporate_class.value == 'asset_manager' %}
-                            💰 Asset Manager
-                        {% elif player.corporate_class.value == 'wellness_manager' %}
-                            🏥 Wellness Manager
-                        {% else %}
-                            💼 {{ player.corporate_class.value.replace('_', ' ').title() }}
-                        {% endif %}
-                    </span>
-                </div>
-            </div>
-            
-            <div class="resource-stats">
-                <div class="stat-item">
-                    <span class="stat-label">💰 Gold</span>
-                    <span class="stat-value">{{ "{:,}".format(guild.gold) }}</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-label">✨ EXP</span>
-                    <span class="stat-value">{{ "{:,}".format(guild.exp) }}</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-label">📈 Share Price</span>
-                    <span class="stat-value">{{ "%.1f"|format(guild.share_price) }}G</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-label">🏆 Guild Rank</span>
-                    {% if guild.share_price >= 800 %}
-                        <span class="stat-value rank-s">S</span>
-                    {% elif guild.share_price >= 401 %}
-                        <span class="stat-value rank-a">A</span>
-                    {% elif guild.share_price >= 201 %}
-                        <span class="stat-value rank-b">B</span>
-                    {% elif guild.share_price >= 101 %}
-                        <span class="stat-value rank-c">C</span>
-                    {% elif guild.share_price >= 51 %}
-                        <span class="stat-value rank-d">D</span>
-                    {% else %}
-                        <span class="stat-value rank-e">E</span>
-                    {% endif %}
-                </div>
-            </div>
-
-            <div class="facilities-section">
-                <h3 class="section-title">Facilities</h3>
-                <div class="facility-item">
-                    <span class="facility-name">Training Grounds</span>
-                    <span class="facility-level">Lv.3</span>
-                </div>
-                <div class="facility-item">
-                    <span class="facility-name">Armory</span>
-                    <span class="facility-level">Lv.2</span>
-                </div>
-                <div class="facility-item">
-                    <span class="facility-name">Infirmary</span>
-                    <span class="facility-level">Lv.1</span>
-                </div>
-            </div>
-        </aside>
+    <div class="main-layout">
+        {% include 'components/guild_sidebar.html' %}
+        
 
         {% if game_session.should_show_activity_feed %}
         <!-- Center Feed -->

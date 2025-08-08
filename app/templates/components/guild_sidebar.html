@@ -1,0 +1,81 @@
+<!-- Left Sidebar - Guild Info -->
+<aside class="guild-sidebar">
+    <div class="guild-card">
+        <div class="ceo-avatar">👨‍💼</div>
+        <h2 class="ceo-name">{{ player.display_name }}</h2>
+        <p class="ceo-title">CEO of {{ guild.name }}</p>
+        <div style="text-align: center; margin-bottom: 16px;">
+            <span class="background-badge">
+                {% if player.corporate_class.value == 'hr_manager' %}
+                    👥 HR Manager
+                {% elif player.corporate_class.value == 'pr_manager' %}
+                    📢 PR Manager
+                {% elif player.corporate_class.value == 'asset_manager' %}
+                    💰 Asset Manager
+                {% elif player.corporate_class.value == 'wellness_manager' %}
+                    🏥 Wellness Manager
+                {% else %}
+                    💼 {{ player.corporate_class.value.replace('_', ' ').title() }}
+                {% endif %}
+            </span>
+        </div>
+    </div>
+    
+    <div class="guild-card">
+        <h3 class="sidebar-section-title">⚡ Weekly Actions</h3>
+        <div style="text-align: center; padding: 16px;">
+            <div style="font-family: 'Press Start 2P', monospace; font-size: 24px; color: #10b981; text-shadow: 2px 2px 0 #064e3b; margin-bottom: 8px;">
+                {{ game_session.actions_remaining }}/{{ game_session.weekly_action_limit }}
+            </div>
+            <div style="font-size: 12px; color: #6ee7b7; text-shadow: 1px 1px 0 #064e3b;">
+                Actions Remaining
+            </div>
+        </div>
+    </div>
+    
+    <div class="guild-card">
+        <h3 class="sidebar-section-title">Resources</h3>
+        <div class="sidebar-stat-item">
+            <span class="sidebar-stat-label">💰 Gold</span>
+            <span class="sidebar-stat-value">{{ "{:,}".format(guild.gold) }}</span>
+        </div>
+        <div class="sidebar-stat-item">
+            <span class="sidebar-stat-label">✨ EXP</span>
+            <span class="sidebar-stat-value">{{ "{:,}".format(guild.exp) }}</span>
+        </div>
+        <div class="sidebar-stat-item">
+            <span class="sidebar-stat-label">📈 Share Price</span>
+            <span class="sidebar-stat-value">{{ "%.1f"|format(guild.share_price) }}G</span>
+        </div>
+        <div class="sidebar-stat-item">
+            <span class="sidebar-stat-label">🏆 Guild Rank</span>
+            {% if guild.share_price >= 800 %}
+                <span class="sidebar-stat-value rank-s">S</span>
+            {% elif guild.share_price >= 401 %}
+                <span class="sidebar-stat-value rank-a">A</span>
+            {% elif guild.share_price >= 201 %}
+                <span class="sidebar-stat-value rank-b">B</span>
+            {% elif guild.share_price >= 101 %}
+                <span class="sidebar-stat-value rank-c">C</span>
+            {% elif guild.share_price >= 51 %}
+                <span class="sidebar-stat-value rank-d">D</span>
+            {% else %}
+                <span class="sidebar-stat-value rank-e">E</span>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if show_team_status %}
+    <div class="guild-card">
+        <h3 class="sidebar-section-title">🎯 Team Status</h3>
+        <div class="sidebar-stat-item">
+            <span class="sidebar-stat-label">👥 Adventurers</span>
+            <span class="sidebar-stat-value">{{ guild.get_current_adventurer_count() }}/{{ guild.get_max_adventurers() }}</span>
+        </div>
+        <div class="sidebar-stat-item">
+            <span class="sidebar-stat-label">🛡️ Available Slots</span>
+            <span class="sidebar-stat-value">{{ guild.get_max_adventurers() - guild.get_current_adventurer_count() }}</span>
+        </div>
+    </div>
+    {% endif %}
+</aside>

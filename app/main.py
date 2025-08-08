@@ -2,6 +2,7 @@ from fastapi import FastAPI, Request, Form, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
+from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 from datetime import timedelta
 from sqlalchemy.orm import Session
@@ -27,8 +28,9 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Set up templates
+# Set up templates and static files
 templates = Jinja2Templates(directory="templates")
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 app.add_middleware(
     CORSMiddleware,
@@ -94,6 +96,9 @@ async def weekly_planner(
     if not current_player or not current_player.game_session or not current_player.guild:
         return RedirectResponse(url="/", status_code=302)
     
+    # Refresh guild data to ensure adventurers are loaded
+    db.refresh(current_player.guild)
+    
     return templates.TemplateResponse("weekly_planner.html", {
         "request": request,
         "player": current_player,
@@ -111,11 +116,22 @@ async def recruit(
     if not current_player or not current_player.game_session or not current_player.guild:
         return RedirectResponse(url="/", status_code=302)
     
+    # Import Adventurer model
+    from app.models.adventurer import Adventurer
+    
+    # Get available adventurers for this game session
+    available_adventurers = db.query(Adventurer).filter(
+        Adventurer.game_session_id == current_player.game_session.id,
+        Adventurer.is_available == True,
+        Adventurer.guild_id.is_(None)
+    ).all()
+    
     return templates.TemplateResponse("recruit.html", {
         "request": request,
         "player": current_player,
         "game_session": current_player.game_session,
-        "guild": current_player.guild
+        "guild": current_player.guild,
+        "available_adventurers": available_adventurers
     })
 
 @app.get("/adventurer/{adventurer_id}", response_class=HTMLResponse)
@@ -129,15 +145,15 @@ async def adventurer_profile(
     if not current_player or not current_player.game_session or not current_player.guild:
         return RedirectResponse(url="/", status_code=302)
     
-    # TODO: Fetch actual adventurer data from database when generation system is implemented
-    # For now, return mock data based on adventurer_id
-    mock_adventurers = {
-        1: {"name": "Gareth the Bold", "class": "Fighter", "level": 15, "avatar": "⚔️"},
-        2: {"name": "Lyra Swiftshot", "class": "Archer", "level": 12, "avatar": "🏹"},
-        3: {"name": "Theron Lightbringer", "class": "Cleric", "level": 8, "avatar": "✨"}
-    }
+    # Import Adventurer model
+    from app.models.adventurer import Adventurer
     
-    adventurer = mock_adventurers.get(adventurer_id)
+    # Fetch real adventurer from database
+    adventurer = db.query(Adventurer).filter(
+        Adventurer.id == adventurer_id,
+        Adventurer.game_session_id == current_player.game_session.id
+    ).first()
+    
     if not adventurer:
         return RedirectResponse(url="/recruit", status_code=302)
     
@@ -337,6 +353,62 @@ async def advance_week(
     
     # Redirect to weekly planner
     return RedirectResponse(url="/weekly-planner", status_code=302)
+
+@app.post("/api/recruit/{adventurer_id}")
+async def recruit_adventurer(
+    adventurer_id: int,
+    current_player: Player = Depends(get_current_player_from_cookie),
+    db: Session = Depends(get_db)
+):
+    """Recruit an adventurer to the player's guild"""
+    if not current_player or not current_player.game_session or not current_player.guild:
+        return HTMLResponse("❌ Authentication required", status_code=401)
+    
+    from app.models.adventurer import Adventurer
+    
+    # Get the adventurer
+    adventurer = db.query(Adventurer).filter(
+        Adventurer.id == adventurer_id,
+        Adventurer.game_session_id == current_player.game_session.id,
+        Adventurer.is_available == True,
+        Adventurer.guild_id.is_(None)
+    ).first()
+    
+    if not adventurer:
+        return HTMLResponse("❌ Adventurer not available for recruitment", status_code=400)
+    
+    # Check if guild can afford the hire cost
+    if current_player.guild.gold < adventurer.hire_cost:
+        return HTMLResponse(f"❌ Insufficient funds. Need {adventurer.hire_cost}G, have {current_player.guild.gold}G", status_code=400)
+    
+    # Check guild capacity limits
+    if not current_player.guild.can_recruit_more_adventurers():
+        max_adventurers = current_player.guild.get_max_adventurers()
+        return HTMLResponse(f"❌ Guild at capacity ({max_adventurers} adventurers max)", status_code=400)
+    
+    try:
+        # Deduct hire cost from guild
+        current_player.guild.gold -= adventurer.hire_cost
+        
+        # Assign adventurer to guild
+        adventurer.guild_id = current_player.guild.id
+        adventurer.is_available = False
+        
+        db.commit()
+        
+        # Return success message
+        return HTMLResponse(f"""
+        <div style="text-align: center; color: #10b981; padding: 20px;">
+            ✅ {adventurer.name} has been recruited to {current_player.guild.name}!<br>
+            <small>Cost: {adventurer.hire_cost}G • Weekly Salary: {adventurer.weekly_salary}G</small>
+            <br><br>
+            <a href="/weekly-planner" style="color: #3b82f6; text-decoration: none;">← Return to Guild Management</a>
+        </div>
+        """)
+        
+    except Exception as e:
+        db.rollback()
+        return HTMLResponse(f"❌ Recruitment failed: {str(e)}", status_code=500)
 
 # HTMX API Routes
 @app.post("/api/actions/recruit")

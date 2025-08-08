@@ -376,7 +376,7 @@
             </div>
 
             <!-- Login Form -->
-            <form class="auth-form active" id="login-form" hx-post="/api/auth/login" hx-target="#auth-response">
+            <form class="auth-form active" id="login-form" hx-post="/api/auth/login" hx-target="#auth-response" hx-swap="innerHTML">
                 <div id="auth-response"></div>
                 
                 <div class="form-group">
@@ -462,6 +462,17 @@
                 document.getElementById('register-response').innerHTML = '';
             }
         }
+
+        // Handle HTMX error responses
+        document.body.addEventListener('htmx:responseError', function(evt) {
+            // For 400 and 500 status codes, show the response content
+            if (evt.detail.xhr.status === 400 || evt.detail.xhr.status === 500) {
+                const target = document.querySelector(evt.detail.target);
+                if (target) {
+                    target.innerHTML = evt.detail.xhr.responseText;
+                }
+            }
+        });
     </script>
 </body>
 </html>

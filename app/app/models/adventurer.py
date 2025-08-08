@@ -1,9 +1,116 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean, Text, Table
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from enum import Enum as PyEnum
 import random
 from .database import Base
+
+# Association tables for many-to-many relationships
+adventurer_skills = Table(
+    'adventurer_skills', Base.metadata,
+    Column('adventurer_id', Integer, ForeignKey('adventurers.id'), primary_key=True),
+    Column('skill_id', Integer, ForeignKey('skills.id'), primary_key=True)
+)
+
+adventurer_traits = Table(
+    'adventurer_traits', Base.metadata,
+    Column('adventurer_id', Integer, ForeignKey('adventurers.id'), primary_key=True),
+    Column('trait_id', Integer, ForeignKey('traits.id'), primary_key=True)
+)
+
+class Skill(Base):
+    """Combat skills that adventurers can use during dungeons"""
+    __tablename__ = "skills"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False, unique=True)
+    description = Column(Text, nullable=False)
+    skill_type = Column(String, nullable=False)  # 'offensive', 'defensive', 'utility', 'healing'
+    cooldown = Column(Integer, default=0)  # Turns between uses (0 = no cooldown)
+    
+    # Class restrictions (None = available to all)
+    restricted_to_classes = Column(String, nullable=True)  # Comma-separated class names, or None
+    
+    # Darkest Dungeon-style position system
+    usable_positions = Column(String, nullable=False, default="1,2,3,4")  # Comma-separated positions (1=front, 2=mid-front, 3=mid-back, 4=back)
+    target_type = Column(String, nullable=False, default="enemy")  # 'enemy', 'ally', 'any', 'self'
+    target_positions = Column(String, nullable=True)  # Which positions this skill can target (None = any position of target_type)
+    
+    # Relationships
+    adventurers = relationship("Adventurer", secondary=adventurer_skills, back_populates="skills")
+    
+    def __repr__(self):
+        return f"<Skill(id={self.id}, name='{self.name}', type='{self.skill_type}', positions='{self.usable_positions}', targets='{self.target_type}')>"
+    
+    def can_use_from_position(self, position):
+        """Check if skill can be used from specific position (1-4)"""
+        return str(position) in self.usable_positions.split(',')
+    
+    def can_target_position(self, position, target_type=None):
+        """Check if skill can target specific position (1-4)"""
+        if target_type and self.target_type not in ['any', target_type]:
+            return False
+        if not self.target_positions:
+            return True  # Can target any position of correct type
+        return str(position) in self.target_positions.split(',')
+    
+    def get_valid_targets(self):
+        """Get description of what this skill can target"""
+        target_desc = {
+            'enemy': 'Enemies',
+            'ally': 'Allies', 
+            'any': 'Anyone',
+            'self': 'Self only'
+        }
+        return target_desc.get(self.target_type, 'Unknown')
+
+class Trait(Base):
+    """Passive traits that provide bonuses and penalties in combat and outside combat"""
+    __tablename__ = "traits"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False, unique=True)
+    description = Column(Text, nullable=False)
+    trait_type = Column(String, nullable=False)  # 'combat', 'economic', 'social', 'training'
+    
+    # Effect values (can be positive or negative)
+    bonus_value = Column(Integer, default=0)  # Percentage or flat bonus (negative values = penalties)
+    bonus_type = Column(String, nullable=True)  # 'percentage', 'flat', 'special'
+    
+    # Additional effect for complex traits with both positive and negative aspects
+    penalty_value = Column(Integer, default=0)  # Additional penalty value for balanced traits
+    penalty_type = Column(String, nullable=True)  # What the penalty affects
+    
+    # Trait classification
+    effect_type = Column(String, default="positive")  # 'positive', 'negative', 'mixed'
+    rarity = Column(String, default="common")  # 'common', 'uncommon', 'rare', 'legendary'
+    
+    # Relationships  
+    adventurers = relationship("Adventurer", secondary=adventurer_traits, back_populates="traits")
+    
+    def __repr__(self):
+        return f"<Trait(id={self.id}, name='{self.name}', type='{self.trait_type}', effect='{self.effect_type}', rarity='{self.rarity}')>"
+    
+    @property
+    def is_negative(self):
+        """Check if trait has overall negative effect"""
+        return self.effect_type in ['negative', 'mixed']
+    
+    @property
+    def is_positive(self):
+        """Check if trait has overall positive effect"""
+        return self.effect_type in ['positive', 'mixed']
+    
+    def get_effect_description(self):
+        """Get human-readable description of trait effects"""
+        if self.effect_type == "positive":
+            return f"+{self.bonus_value}% {self.bonus_type}" if self.bonus_type else "Special positive effect"
+        elif self.effect_type == "negative":
+            return f"{self.bonus_value}% {self.bonus_type}" if self.bonus_type else "Special negative effect"
+        else:  # mixed
+            bonus_desc = f"+{self.bonus_value}% {self.bonus_type}" if self.bonus_type else "Special bonus"
+            penalty_desc = f"-{self.penalty_value}% {self.penalty_type}" if self.penalty_type else "Special penalty"
+            return f"{bonus_desc}, {penalty_desc}"
 
 class AdventurerClass(PyEnum):
     """Fantasy RPG classes for adventurers"""
@@ -38,7 +145,7 @@ class Adventurer(Base):
     
     # Identity & Ownership
     name = Column(String, nullable=False)  # Generated fantasy names
-    guild_id = Column(Integer, ForeignKey("guilds.id"), nullable=False)
+    guild_id = Column(Integer, ForeignKey("guilds.id"), nullable=True)  # NULL for available adventurers
     game_session_id = Column(Integer, ForeignKey("game_sessions.id"), nullable=False)  # Session isolation
     
     # RPG Class & Progression
@@ -68,6 +175,7 @@ class Adventurer(Base):
     
     # Recruitment Info
     hire_cost = Column(Integer, default=500)  # Cost to recruit
+    weekly_salary = Column(Integer, default=50)  # Weekly salary cost
     is_available = Column(Boolean, default=False)  # False = already hired
     
     # Timestamps
@@ -77,6 +185,8 @@ class Adventurer(Base):
     # Relationships
     guild = relationship("Guild", back_populates="adventurers")
     game_session = relationship("GameSession", back_populates="adventurers")
+    skills = relationship("Skill", secondary=adventurer_skills, back_populates="adventurers")
+    traits = relationship("Trait", secondary=adventurer_traits, back_populates="adventurers")
     
     def __repr__(self):
         return f"<Adventurer(id={self.id}, name='{self.name}', class='{self.adventurer_class}', seniority='{self.seniority}', level={self.level})>"
@@ -243,6 +353,42 @@ class Adventurer(Base):
             total_gains += 1
         
         return total_gains
+    
+    def add_skill(self, skill):
+        """Add a skill to the adventurer"""
+        if skill not in self.skills:
+            self.skills.append(skill)
+    
+    def remove_skill(self, skill):
+        """Remove a skill from the adventurer"""
+        if skill in self.skills:
+            self.skills.remove(skill)
+    
+    def add_trait(self, trait):
+        """Add a trait to the adventurer"""
+        if trait not in self.traits:
+            self.traits.append(trait)
+    
+    def remove_trait(self, trait):
+        """Remove a trait from the adventurer"""
+        if trait in self.traits:
+            self.traits.remove(trait)
+    
+    def get_skills_by_type(self, skill_type):
+        """Get all skills of a specific type"""
+        return [skill for skill in self.skills if skill.skill_type == skill_type]
+    
+    def get_traits_by_type(self, trait_type):
+        """Get all traits of a specific type"""
+        return [trait for trait in self.traits if trait.trait_type == trait_type]
+    
+    def get_combat_bonus(self, bonus_type):
+        """Calculate total bonus from traits for specific bonus type"""
+        total_bonus = 0
+        for trait in self.traits:
+            if trait.trait_type == 'combat' and trait.bonus_type == bonus_type:
+                total_bonus += trait.bonus_value
+        return total_bonus
     
     @classmethod
     def generate_growth_rates(cls, adventurer_class, seniority):

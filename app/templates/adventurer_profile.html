@@ -5,210 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ adventurer.name }} - GuildedIn</title>
     <link href="https://fonts.googleapis.com/css2?family=VT323&family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/components.css">
     <script src="https://unpkg.com/htmx.org@1.9.10/dist/htmx.min.js"></script>
     <style>
-        * {
-            image-rendering: pixelated;
-            image-rendering: -moz-crisp-edges;
-            image-rendering: crisp-edges;
-            box-sizing: border-box;
-        }
-        
-        body { 
-            font-family: 'VT323', 'Courier New', monospace;
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
-            color: #f0f4e8;
-            margin: 0;
-            padding: 0;
-            min-height: 100vh;
-            font-size: 16px;
-        }
-
-        /* Top Navigation */
-        .top-nav {
-            background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
-            border-bottom: 3px solid #f59e0b;
-            padding: 12px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-        }
-
-        .nav-left {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-            flex: 1;
-        }
-
-        .brand-section {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .logo {
-            font-size: 24px;
-            text-shadow: 2px 2px 0 #92400e;
-        }
-
-        .brand-name {
-            font-family: 'Press Start 2P', monospace;
-            font-size: 14px;
-            color: #fbbf24;
-            text-shadow: 2px 2px 0 #92400e;
-            letter-spacing: 1px;
-        }
-
-        .calendar-display {
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-        }
-
-        .game-date {
-            font-family: 'Press Start 2P', monospace;
-            font-size: 10px;
-            color: #fbbf24;
-            text-shadow: 1px 1px 0 #92400e;
-        }
-
-        .game-phase {
-            font-size: 12px;
-            color: #9ca3af;
-            text-shadow: 1px 1px 0 rgba(0,0,0,0.5);
-        }
-
-        .back-btn {
-            background: linear-gradient(135deg, #374151, #1f2937);
-            border: 2px solid #4b5563;
-            color: #f0f4e8;
-            padding: 8px 16px;
-            cursor: pointer;
-            font-family: 'VT323', monospace;
-            font-size: 14px;
-            text-decoration: none;
-            transition: all 0.1s ease;
-        }
-
-        .back-btn:hover {
-            background: linear-gradient(135deg, #4b5563, #374151);
-            transform: translate(-1px, -1px);
-            box-shadow: 2px 2px 0 #1f2937;
-        }
-
-        /* Main Layout */
-        .main-layout {
-            display: grid;
-            grid-template-columns: 320px 1fr;
-            gap: 25px;
-            padding: 25px;
-            max-width: 1400px;
-            margin: 0 auto;
-            min-height: calc(100vh - 90px);
-        }
-
-        /* Left Sidebar - Guild Info */
-        .guild-sidebar {
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-        }
-
-        .guild-card {
-            background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
-            border: 2px solid #374151;
-            border-top: 4px solid #f59e0b;
-            padding: 16px;
-            position: relative;
-        }
-
-        .ceo-avatar {
-            width: 60px;
-            height: 60px;
-            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-            border: 3px solid #e5e7eb;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 28px;
-            margin: 0 auto 12px;
-            box-shadow: 
-                inset -2px -2px 0 rgba(0,0,0,0.3),
-                inset 2px 2px 0 rgba(255,255,255,0.2),
-                2px 2px 4px rgba(0,0,0,0.5);
-        }
-
-        .ceo-name {
-            font-family: 'Press Start 2P', monospace;
-            font-size: 11px;
-            color: #fbbf24;
-            text-shadow: 1px 1px 0 #92400e;
-            text-align: center;
-            margin: 0 0 4px 0;
-        }
-
-        .ceo-title {
-            text-align: center;
-            color: #9ca3af;
-            font-size: 12px;
-            margin: 0 0 8px 0;
-            font-style: italic;
-        }
-
-        .background-badge {
-            background: linear-gradient(135deg, #065f46, #047857);
-            color: #d1fae5;
-            font-size: 9px;
-            font-family: 'Press Start 2P', monospace;
-            padding: 4px 8px;
-            border-radius: 2px;
-            border: 1px solid #10b981;
-            text-shadow: 1px 1px 0 #064e3b;
-            margin: 0 auto;
-            display: inline-block;
-        }
-
-        .sidebar-section-title {
-            font-family: 'Press Start 2P', monospace;
-            font-size: 10px;
-            color: #fbbf24;
-            text-shadow: 1px 1px 0 #92400e;
-            margin: 0 0 12px 0;
-        }
-
-        .stat-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px 0;
-            border-bottom: 1px solid #374151;
-        }
-
-        .stat-item:last-child {
-            border-bottom: none;
-        }
-
-        .stat-label {
-            font-size: 14px;
-            color: #d1d5db;
-        }
-
-        .stat-value {
-            font-family: 'Press Start 2P', monospace;
-            font-size: 10px;
-            color: #10b981;
-            text-shadow: 1px 1px 0 #064e3b;
-        }
-        
-        /* Guild Rank Styling */
-        .rank-s { color: #fbbf24; text-shadow: 1px 1px 0 #92400e; }
-        .rank-a { color: #a855f7; text-shadow: 1px 1px 0 #581c87; }
-        .rank-b { color: #3b82f6; text-shadow: 1px 1px 0 #1e40af; }
-        .rank-c { color: #10b981; text-shadow: 1px 1px 0 #064e3b; }
-        .rank-d { color: #f59e0b; text-shadow: 1px 1px 0 #92400e; }
-        .rank-e { color: #ef4444; text-shadow: 1px 1px 0 #7f1d1d; }
+        /* Page-specific styles for Adventurer Profile */
 
         .profile-layout {
             display: flex;
@@ -335,14 +135,6 @@
             margin-top: 16px;
         }
 
-        .section-title {
-            font-family: 'Press Start 2P', monospace;
-            font-size: 12px;
-            color: #fbbf24;
-            text-shadow: 1px 1px 0 #92400e;
-            margin: 0 0 16px 0;
-        }
-
         /* Stats Card */
         .stats-grid {
             display: grid;
@@ -462,126 +254,20 @@
             transform: translateY(-2px);
             box-shadow: 4px 4px 0 #064e3b;
         }
-
-        .scanlines {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            pointer-events: none;
-            background: 
-                repeating-linear-gradient(
-                    0deg,
-                    transparent,
-                    transparent 2px,
-                    rgba(0,0,0,0.1) 2px,
-                    rgba(0,0,0,0.1) 4px
-                );
-            z-index: 1000;
-        }
     </style>
 </head>
 <body>
     <div class="scanlines"></div>
 
-    <!-- Top Navigation Bar -->
-    <nav class="top-nav">
-        <div class="nav-left">
-            <div class="brand-section">
-                <a href="/" style="display: flex; align-items: center; gap: 8px; text-decoration: none; color: inherit;">
-                    <div class="logo">🏰</div>
-                    <div class="brand-name">GuildedIn</div>
-                </a>
-            </div>
-            <div class="calendar-display">
-                <span class="game-date">{{ game_session.game_date_display }}</span>
-                <span class="game-phase">Adventurer Profile</span>
-            </div>
-        </div>
-        <div class="nav-actions">
-            <a href="/recruit" class="back-btn">← Back to Recruitment</a>
-        </div>
-    </nav>
+    {% set page_title = "Adventurer Profile" %}
+    {% set back_url = "/recruit" %}
+    {% set back_text = "Back to Recruitment" %}
+    {% include 'components/topbar.html' %}
 
     <!-- Main Layout -->
     <div class="main-layout">
-        <!-- Left Sidebar - Guild Info -->
-        <aside class="guild-sidebar">
-            <div class="guild-card">
-                <div class="ceo-avatar">👨‍💼</div>
-                <h2 class="ceo-name">{{ player.display_name }}</h2>
-                <p class="ceo-title">CEO of {{ guild.name }}</p>
-                <div style="text-align: center; margin-bottom: 16px;">
-                    <span class="background-badge">
-                        {% if player.corporate_class.value == 'hr_manager' %}
-                            👥 HR Manager
-                        {% elif player.corporate_class.value == 'pr_manager' %}
-                            📢 PR Manager
-                        {% elif player.corporate_class.value == 'asset_manager' %}
-                            💰 Asset Manager
-                        {% elif player.corporate_class.value == 'wellness_manager' %}
-                            🏥 Wellness Manager
-                        {% else %}
-                            💼 {{ player.corporate_class.value.replace('_', ' ').title() }}
-                        {% endif %}
-                    </span>
-                </div>
-            </div>
-            
-            <div class="guild-card">
-                <h3 class="sidebar-section-title">⚡ Weekly Actions</h3>
-                <div style="text-align: center; padding: 16px;">
-                    <div style="font-family: 'Press Start 2P', monospace; font-size: 24px; color: #10b981; text-shadow: 2px 2px 0 #064e3b; margin-bottom: 8px;">
-                        {{ game_session.actions_remaining }}/{{ game_session.weekly_action_limit }}
-                    </div>
-                    <div style="font-size: 12px; color: #6ee7b7; text-shadow: 1px 1px 0 #064e3b;">
-                        Actions Remaining
-                    </div>
-                </div>
-            </div>
-            
-            <div class="guild-card">
-                <h3 class="sidebar-section-title">Resources</h3>
-                <div class="stat-item">
-                    <span class="stat-label">💰 Gold</span>
-                    <span class="stat-value">{{ "{:,}".format(guild.gold) }}</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-label">✨ EXP</span>
-                    <span class="stat-value">{{ "{:,}".format(guild.exp) }}</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-label">📈 Share Price</span>
-                    <span class="stat-value">{{ "%.1f"|format(guild.share_price) }}G</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-label">🏆 Guild Rank</span>
-                    {% if guild.share_price >= 800 %}
-                        <span class="stat-value rank-s">S</span>
-                    {% elif guild.share_price >= 401 %}
-                        <span class="stat-value rank-a">A</span>
-                    {% elif guild.share_price >= 201 %}
-                        <span class="stat-value rank-b">B</span>
-                    {% elif guild.share_price >= 101 %}
-                        <span class="stat-value rank-c">C</span>
-                    {% elif guild.share_price >= 51 %}
-                        <span class="stat-value rank-d">D</span>
-                    {% else %}
-                        <span class="stat-value rank-e">E</span>
-                    {% endif %}
-                </div>
-            </div>
-
-            <div class="guild-card">
-                <h3 class="sidebar-section-title">🎯 Team Status</h3>
-                <div class="stat-item">
-                    <span class="stat-label">👥 Adventurers</span>
-                    <span class="stat-value">{{ guild.get_current_adventurer_count() }}/{{ guild.get_max_adventurers() }}</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-label">🛡️ Available Slots</span>
-                    <span class="stat-value">{{ guild.get_max_adventurers() - guild.get_current_adventurer_count() }}</span>
-                </div>
-            </div>
-        </aside>
+        {% set show_team_status = true %}
+        {% include 'components/guild_sidebar.html' %}
 
         <!-- Right Content Area -->
         <main class="profile-layout">
@@ -589,19 +275,19 @@
             <div class="profile-card">
                 <div class="profile-content">
                     <div class="profile-header">
-                        <div class="profile-avatar">⚔️</div>
+                        <div class="profile-avatar">{{ adventurer.class_emoji }}</div>
                         <div class="profile-info">
-                            <h1 class="profile-name">Gareth the Bold</h1>
-                            <p class="profile-title">Veteran Fighter • Looking for new guild</p>
+                            <h1 class="profile-name">{{ adventurer.name }}</h1>
+                            <p class="profile-title">{{ adventurer.class_display_name }} • Looking for new guild</p>
                             <div class="profile-badges">
-                                <span class="profile-badge class-badge">Fighter</span>
-                                <span class="profile-badge role-badge">Tank</span>
-                                <span class="profile-badge seniority-badge">Senior</span>
+                                <span class="profile-badge class-badge">{{ adventurer.class_display_name }}</span>
+                                <span class="profile-badge role-badge">{{ adventurer.role_display_name }}</span>
+                                <span class="profile-badge seniority-badge">{{ adventurer.seniority_display_name }}</span>
                             </div>
                         </div>
                     </div>
                     
-                    <div class="profile-level">Level 15</div>
+                    <div class="profile-level">Level {{ adventurer.level }}</div>
                 </div>
             </div>
 
@@ -612,27 +298,31 @@
                 <div class="stats-grid">
                     <div class="stat-box">
                         <div class="stat-label">Hit Points</div>
-                        <div class="stat-value">120</div>
+                        <div class="stat-value">{{ adventurer.max_hp }}</div>
                     </div>
                     <div class="stat-box">
                         <div class="stat-label">Strength</div>
-                        <div class="stat-value">18</div>
+                        <div class="stat-value">{{ adventurer.strength }}</div>
                     </div>
                     <div class="stat-box">
                         <div class="stat-label">Dexterity</div>
-                        <div class="stat-value">12</div>
+                        <div class="stat-value">{{ adventurer.dexterity }}</div>
                     </div>
                     <div class="stat-box">
                         <div class="stat-label">Constitution</div>
-                        <div class="stat-value">16</div>
+                        <div class="stat-value">{{ adventurer.constitution }}</div>
                     </div>
                     <div class="stat-box">
                         <div class="stat-label">Intelligence</div>
-                        <div class="stat-value">10</div>
+                        <div class="stat-value">{{ adventurer.intelligence }}</div>
                     </div>
                     <div class="stat-box">
                         <div class="stat-label">Synergy</div>
-                        <div class="stat-value">14</div>
+                        <div class="stat-value">{{ adventurer.synergy }}</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">Optics</div>
+                        <div class="stat-value">{{ adventurer.optics }}</div>
                     </div>
                 </div>
             </div>
@@ -643,22 +333,23 @@
             <div class="profile-content">
                 <h2 class="section-title">⚔️ Combat Skills</h2>
                 <div class="skills-grid">
-                    <div class="skill-item">
-                        <h3 class="skill-name">Shield Wall</h3>
-                        <p class="skill-description">Creates a defensive barrier that blocks incoming attacks and protects nearby allies.</p>
-                    </div>
-                    <div class="skill-item">
-                        <h3 class="skill-name">Mighty Strike</h3>
-                        <p class="skill-description">A powerful melee attack that deals extra damage and has a chance to stun the target.</p>
-                    </div>
-                    <div class="skill-item">
-                        <h3 class="skill-name">Taunt</h3>
-                        <p class="skill-description">Forces enemies to focus their attacks on this adventurer, protecting the team.</p>
-                    </div>
-                    <div class="skill-item">
-                        <h3 class="skill-name">Battle Fury</h3>
-                        <p class="skill-description">Increases attack speed and damage for a short duration when health drops below 50%.</p>
-                    </div>
+                    {% if adventurer.skills %}
+                        {% for skill in adventurer.skills %}
+                        <div class="skill-item">
+                            <h3 class="skill-name">{{ skill.name }}</h3>
+                            <p class="skill-description">{{ skill.description }}</p>
+                            <div style="margin-top: 8px; font-size: 10px; color: #9ca3af;">
+                                <span>Type: {{ skill.skill_type.title() }}</span>
+                                {% if skill.cooldown > 0 %} • <span>Cooldown: {{ skill.cooldown }} turns</span>{% endif %}
+                                <br>Targets: {{ skill.get_valid_targets() }}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div style="text-align: center; color: #9ca3af; padding: 20px;">
+                            No skills learned yet.
+                        </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -668,18 +359,29 @@
             <div class="profile-content">
                 <h2 class="section-title">✨ Traits</h2>
                 <div class="traits-grid">
-                    <div class="trait-item">
-                        <h3 class="trait-name">Veteran Leadership</h3>
-                        <p class="trait-description">Provides +10% experience gain to all party members during dungeon expeditions.</p>
-                    </div>
-                    <div class="trait-item">
-                        <h3 class="trait-name">Iron Will</h3>
-                        <p class="trait-description">Immune to fear and charm effects. Reduces duration of all negative status effects by 50%.</p>
-                    </div>
-                    <div class="trait-item">
-                        <h3 class="trait-name">Heavy Armor Mastery</h3>
-                        <p class="trait-description">Reduces physical damage taken by 20% and negates movement penalties from heavy armor.</p>
-                    </div>
+                    {% if adventurer.traits %}
+                        {% for trait in adventurer.traits %}
+                        <div class="trait-item">
+                            <h3 class="trait-name">{{ trait.name }}
+                                {% if trait.rarity == 'legendary' %}
+                                    <span style="color: #fbbf24;"> ★★★</span>
+                                {% elif trait.rarity == 'rare' %}
+                                    <span style="color: #a855f7;"> ★★</span>
+                                {% elif trait.rarity == 'uncommon' %}
+                                    <span style="color: #3b82f6;"> ★</span>
+                                {% endif %}
+                            </h3>
+                            <p class="trait-description">{{ trait.description }}</p>
+                            <div style="margin-top: 8px; font-size: 10px; color: #9ca3af;">
+                                Type: {{ trait.trait_type.title() }} • Effect: {{ trait.effect_type.title() }}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div style="text-align: center; color: #9ca3af; padding: 20px;">
+                            No special traits.
+                        </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -688,8 +390,16 @@
         <div class="profile-card">
             <div class="profile-content">
                 <div class="recruit-section">
-                    <div class="hire-cost">Recruitment Cost: 💰 1,200G</div>
-                    <button class="recruit-btn">Recruit Gareth</button>
+                    <div class="hire-cost">Recruitment Cost: 💰 {{ "{:,}".format(adventurer.hire_cost) }}G</div>
+                    <div style="font-size: 12px; color: #9ca3af; margin: 8px 0;">
+                        Weekly Salary: 💳 {{ "{:,}".format(adventurer.weekly_salary) }}G/week
+                    </div>
+                    <button class="recruit-btn" 
+                            hx-post="/api/recruit/{{ adventurer.id }}" 
+                            hx-target="closest .recruit-section" 
+                            hx-swap="innerHTML">
+                        Recruit {{ adventurer.name.split(' ')[0] }}
+                    </button>
                 </div>
             </div>
         </main>

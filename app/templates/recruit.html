@@ -5,247 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Recruit Adventurers - GuildedIn</title>
     <link href="https://fonts.googleapis.com/css2?family=VT323&family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/components.css">
     <script src="https://unpkg.com/htmx.org@1.9.10/dist/htmx.min.js"></script>
     <style>
-        * {
-            image-rendering: pixelated;
-            image-rendering: -moz-crisp-edges;
-            image-rendering: crisp-edges;
-            box-sizing: border-box;
-        }
+        /* Page-specific styles for Recruit page */
         
-        body { 
-            font-family: 'VT323', 'Courier New', monospace;
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
-            color: #f0f4e8;
-            margin: 0;
-            padding: 0;
-            min-height: 100vh;
-            font-size: 16px;
-        }
-
-        /* Top Navigation */
-        .top-nav {
-            background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
-            border-bottom: 3px solid #f59e0b;
-            padding: 12px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-        }
-
-        .nav-left {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-            flex: 1;
-        }
-
-        .brand-section {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .logo {
-            font-size: 24px;
-            text-shadow: 2px 2px 0 #92400e;
-        }
-
-        .brand-name {
-            font-family: 'Press Start 2P', monospace;
-            font-size: 14px;
-            color: #fbbf24;
-            text-shadow: 2px 2px 0 #92400e;
-            letter-spacing: 1px;
-        }
-
-        .calendar-display {
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-        }
-
-        .game-date {
-            font-family: 'Press Start 2P', monospace;
-            font-size: 10px;
-            color: #fbbf24;
-            text-shadow: 1px 1px 0 #92400e;
-        }
-
-        .game-phase {
-            font-size: 12px;
-            color: #9ca3af;
-            text-shadow: 1px 1px 0 rgba(0,0,0,0.5);
-        }
-
-        .back-btn {
-            background: linear-gradient(135deg, #374151, #1f2937);
-            border: 2px solid #4b5563;
-            color: #f0f4e8;
-            padding: 8px 16px;
-            cursor: pointer;
-            font-family: 'VT323', monospace;
-            font-size: 14px;
-            text-decoration: none;
-            transition: all 0.1s ease;
-        }
-
-        .back-btn:hover {
-            background: linear-gradient(135deg, #4b5563, #374151);
-            transform: translate(-1px, -1px);
-            box-shadow: 2px 2px 0 #1f2937;
-        }
-
-        /* Main Layout */
-        .main-layout {
-            display: grid;
-            grid-template-columns: 320px 1fr;
-            gap: 25px;
-            padding: 25px;
-            max-width: 1400px;
-            margin: 0 auto;
-            min-height: calc(100vh - 90px);
-        }
-
-        /* Left Sidebar - Guild Info */
-        .guild-sidebar {
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-        }
-
-        .guild-card {
-            background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
-            border: 2px solid #374151;
-            border-top: 4px solid #f59e0b;
-            padding: 16px;
-            position: relative;
-        }
-
-        .ceo-avatar {
-            width: 60px;
-            height: 60px;
-            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-            border: 3px solid #e5e7eb;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 28px;
-            margin: 0 auto 12px;
-            box-shadow: 
-                inset -2px -2px 0 rgba(0,0,0,0.3),
-                inset 2px 2px 0 rgba(255,255,255,0.2),
-                2px 2px 4px rgba(0,0,0,0.5);
-        }
-
-        .ceo-name {
-            font-family: 'Press Start 2P', monospace;
-            font-size: 11px;
-            color: #fbbf24;
-            text-shadow: 1px 1px 0 #92400e;
-            text-align: center;
-            margin: 0 0 4px 0;
-        }
-
-        .ceo-title {
-            text-align: center;
-            color: #9ca3af;
-            font-size: 12px;
-            margin: 0 0 8px 0;
-            font-style: italic;
-        }
-
-        .background-badge {
-            background: linear-gradient(135deg, #065f46, #047857);
-            color: #d1fae5;
-            font-size: 9px;
-            font-family: 'Press Start 2P', monospace;
-            padding: 4px 8px;
-            border-radius: 2px;
-            border: 1px solid #10b981;
-            text-shadow: 1px 1px 0 #064e3b;
-            margin: 0 auto;
-            display: inline-block;
-        }
-
-        .section-title {
-            font-family: 'Press Start 2P', monospace;
-            font-size: 10px;
-            color: #fbbf24;
-            text-shadow: 1px 1px 0 #92400e;
-            margin: 0 0 12px 0;
-        }
-
-        .stat-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px 0;
-            border-bottom: 1px solid #374151;
-        }
-
-        .stat-item:last-child {
-            border-bottom: none;
-        }
-
-        .stat-label {
-            font-size: 14px;
-            color: #d1d5db;
-        }
-
-        .stat-value {
-            font-family: 'Press Start 2P', monospace;
-            font-size: 10px;
-            color: #10b981;
-            text-shadow: 1px 1px 0 #064e3b;
-        }
-        
-        /* Guild Rank Styling */
-        .rank-s { color: #fbbf24; text-shadow: 1px 1px 0 #92400e; }
-        .rank-a { color: #a855f7; text-shadow: 1px 1px 0 #581c87; }
-        .rank-b { color: #3b82f6; text-shadow: 1px 1px 0 #1e40af; }
-        .rank-c { color: #10b981; text-shadow: 1px 1px 0 #064e3b; }
-        .rank-d { color: #f59e0b; text-shadow: 1px 1px 0 #92400e; }
-        .rank-e { color: #ef4444; text-shadow: 1px 1px 0 #7f1d1d; }
-
-        /* Right Content Area */
-        .content-area {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .content-card {
-            background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
-            border: 2px solid #374151;
-            border-top: 4px solid #10b981;
-            padding: 20px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .content-card::after {
-            content: '';
-            position: absolute;
-            bottom: 0; left: 0; right: 0; top: 0;
-            background: 
-                repeating-linear-gradient(
-                    0deg,
-                    transparent,
-                    transparent 2px,
-                    rgba(255,255,255,0.02) 2px,
-                    rgba(255,255,255,0.02) 4px
-                );
-            pointer-events: none;
-        }
-
-        .content-inner {
-            position: relative;
-            z-index: 1;
-        }
-
         /* Adventurer Cards Grid */
         .adventurers-grid {
             display: grid;
@@ -328,264 +92,20 @@
             font-family: 'Press Start 2P', monospace;
             font-size: 10px;
         }
-
-        /* Detailed view styling */
-        .detailed-header {
-            display: flex;
-            align-items: flex-start;
-            gap: 12px;
-            margin-bottom: 12px;
-        }
-
-        .detailed-avatar {
-            width: 56px;
-            height: 56px;
-            background: linear-gradient(135deg, #10b981, #047857);
-            border: 2px solid #6ee7b7;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            flex-shrink: 0;
-            box-shadow: 
-                inset -2px -2px 0 rgba(0,0,0,0.3),
-                inset 2px 2px 0 rgba(255,255,255,0.2),
-                2px 2px 4px rgba(0,0,0,0.5);
-        }
-
-        .detailed-info {
-            flex: 1;
-        }
-
-        .detailed-name {
-            font-family: 'Press Start 2P', monospace;
-            font-size: 12px;
-            color: #fbbf24;
-            text-shadow: 1px 1px 0 #92400e;
-            margin: 0 0 6px 0;
-            line-height: 1.3;
-        }
-
-        .detailed-title {
-            font-size: 13px;
-            color: #9ca3af;
-            margin: 0 0 8px 0;
-            font-style: italic;
-        }
-
-        .detailed-badges {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 4px;
-            margin-bottom: 12px;
-        }
-
-        .detailed-badge {
-            font-size: 8px;
-            padding: 2px 4px;
-            font-family: 'Press Start 2P', monospace;
-            text-transform: uppercase;
-        }
-
-        .detailed-class-badge {
-            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-            color: #dbeafe;
-            text-shadow: 1px 1px 0 #1e40af;
-        }
-
-        .detailed-role-badge {
-            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
-            color: #ede9fe;
-            text-shadow: 1px 1px 0 #5b21b6;
-        }
-
-        .detailed-seniority-badge {
-            background: linear-gradient(135deg, #f59e0b, #d97706);
-            color: #1f2937;
-            text-shadow: 1px 1px 0 #92400e;
-        }
-
-        .detailed-stats {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 6px;
-            margin-bottom: 12px;
-        }
-
-        .detailed-stat-box {
-            text-align: center;
-            padding: 4px;
-            background: linear-gradient(135deg, #1f2937, #111827);
-            border: 1px solid #374151;
-        }
-
-        .detailed-stat-label {
-            font-size: 8px;
-            color: #6b7280;
-            font-family: 'Press Start 2P', monospace;
-            text-transform: uppercase;
-        }
-
-        .detailed-stat-number {
-            font-size: 12px;
-            color: #10b981;
-            font-family: 'Press Start 2P', monospace;
-            margin-top: 2px;
-            text-shadow: 1px 1px 0 #064e3b;
-        }
-
-        .detailed-hire-info {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding-top: 8px;
-            border-top: 1px solid #374151;
-        }
-
-        .detailed-hire-cost {
-            font-family: 'Press Start 2P', monospace;
-            font-size: 10px;
-            color: #10b981;
-            text-shadow: 1px 1px 0 #064e3b;
-        }
-
-        .detailed-recruit-btn {
-            background: linear-gradient(135deg, #10b981, #047857);
-            color: #1f2937;
-            border: none;
-            padding: 6px 12px;
-            font-family: 'Press Start 2P', monospace;
-            font-size: 8px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            text-transform: uppercase;
-        }
-
-        .detailed-recruit-btn:hover {
-            background: linear-gradient(135deg, #6ee7b7, #10b981);
-            transform: translateY(-1px);
-            box-shadow: 2px 2px 0 #064e3b;
-        }
-
-        .scanlines {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            pointer-events: none;
-            background: 
-                repeating-linear-gradient(
-                    0deg,
-                    transparent,
-                    transparent 2px,
-                    rgba(0,0,0,0.1) 2px,
-                    rgba(0,0,0,0.1) 4px
-                );
-            z-index: 1000;
-        }
     </style>
 </head>
 <body>
     <div class="scanlines"></div>
 
-    <!-- Top Navigation Bar -->
-    <nav class="top-nav">
-        <div class="nav-left">
-            <div class="brand-section">
-                <a href="/" style="display: flex; align-items: center; gap: 8px; text-decoration: none; color: inherit;">
-                    <div class="logo">🏰</div>
-                    <div class="brand-name">GuildedIn</div>
-                </a>
-            </div>
-            <div class="calendar-display">
-                <span class="game-date">{{ game_session.game_date_display }}</span>
-                <span class="game-phase">Recruitment Portal</span>
-            </div>
-        </div>
-        <div class="nav-actions">
-            <a href="/weekly-planner" class="back-btn">← Back to Planner</a>
-        </div>
-    </nav>
+    {% set page_title = "Recruitment Portal" %}
+    {% set back_url = "/weekly-planner" %}
+    {% set back_text = "Back to Planner" %}
+    {% include 'components/topbar.html' %}
 
     <!-- Main Layout -->
     <div class="main-layout">
-        <!-- Left Sidebar - Guild Info -->
-        <aside class="guild-sidebar">
-            <div class="guild-card">
-                <div class="ceo-avatar">👨‍💼</div>
-                <h2 class="ceo-name">{{ player.display_name }}</h2>
-                <p class="ceo-title">CEO of {{ guild.name }}</p>
-                <div style="text-align: center; margin-bottom: 16px;">
-                    <span class="background-badge">
-                        {% if player.corporate_class.value == 'hr_manager' %}
-                            👥 HR Manager
-                        {% elif player.corporate_class.value == 'pr_manager' %}
-                            📢 PR Manager
-                        {% elif player.corporate_class.value == 'asset_manager' %}
-                            💰 Asset Manager
-                        {% elif player.corporate_class.value == 'wellness_manager' %}
-                            🏥 Wellness Manager
-                        {% else %}
-                            💼 {{ player.corporate_class.value.replace('_', ' ').title() }}
-                        {% endif %}
-                    </span>
-                </div>
-            </div>
-            
-            <div class="guild-card">
-                <h3 class="section-title">⚡ Weekly Actions</h3>
-                <div style="text-align: center; padding: 16px;">
-                    <div style="font-family: 'Press Start 2P', monospace; font-size: 24px; color: #10b981; text-shadow: 2px 2px 0 #064e3b; margin-bottom: 8px;">
-                        {{ game_session.actions_remaining }}/{{ game_session.weekly_action_limit }}
-                    </div>
-                    <div style="font-size: 12px; color: #6ee7b7; text-shadow: 1px 1px 0 #064e3b;">
-                        Actions Remaining
-                    </div>
-                </div>
-            </div>
-            
-            <div class="guild-card">
-                <h3 class="section-title">Resources</h3>
-                <div class="stat-item">
-                    <span class="stat-label">💰 Gold</span>
-                    <span class="stat-value">{{ "{:,}".format(guild.gold) }}</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-label">✨ EXP</span>
-                    <span class="stat-value">{{ "{:,}".format(guild.exp) }}</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-label">📈 Share Price</span>
-                    <span class="stat-value">{{ "%.1f"|format(guild.share_price) }}G</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-label">🏆 Guild Rank</span>
-                    {% if guild.share_price >= 800 %}
-                        <span class="stat-value rank-s">S</span>
-                    {% elif guild.share_price >= 401 %}
-                        <span class="stat-value rank-a">A</span>
-                    {% elif guild.share_price >= 201 %}
-                        <span class="stat-value rank-b">B</span>
-                    {% elif guild.share_price >= 101 %}
-                        <span class="stat-value rank-c">C</span>
-                    {% elif guild.share_price >= 51 %}
-                        <span class="stat-value rank-d">D</span>
-                    {% else %}
-                        <span class="stat-value rank-e">E</span>
-                    {% endif %}
-                </div>
-            </div>
-
-            <div class="guild-card">
-                <h3 class="section-title">🎯 Team Status</h3>
-                <div class="stat-item">
-                    <span class="stat-label">👥 Adventurers</span>
-                    <span class="stat-value">{{ guild.get_current_adventurer_count() }}/{{ guild.get_max_adventurers() }}</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-label">🛡️ Available Slots</span>
-                    <span class="stat-value">{{ guild.get_max_adventurers() - guild.get_current_adventurer_count() }}</span>
-                </div>
-            </div>
-        </aside>
+        {% set show_team_status = true %}
+        {% include 'components/guild_sidebar.html' %}
 
         <!-- Right Content Area -->
         <main class="content-area">
@@ -595,50 +115,31 @@
                     <h2 class="section-title">🔍 Available Adventurers</h2>
                     
                     <div class="adventurers-grid">
-                        <!-- Sample Adventurer 1 -->
-                        <a href="/adventurer/1" class="adventurer-card">
-                            <div class="compact-header">
-                                <div class="compact-avatar">⚔️</div>
-                                <div class="compact-info">
-                                    <h3 class="compact-name">Gareth the Bold</h3>
-                                    <div class="compact-details">
-                                        <span class="compact-class">Fighter</span>
-                                        <span>•</span>
-                                        <span class="compact-level">LVL 15</span>
+                        {% if available_adventurers %}
+                            {% for adventurer in available_adventurers %}
+                            <a href="/adventurer/{{ adventurer.id }}" class="adventurer-card">
+                                <div class="compact-header">
+                                    <div class="compact-avatar">{{ adventurer.class_emoji }}</div>
+                                    <div class="compact-info">
+                                        <h3 class="compact-name">{{ adventurer.name }}</h3>
+                                        <div class="compact-details">
+                                            <span class="compact-class">{{ adventurer.class_display_name }}</span>
+                                            <span>•</span>
+                                            <span class="compact-level">{{ adventurer.seniority_emoji }} {{ adventurer.seniority_display_name }}</span>
+                                            <span>•</span>
+                                            <span class="compact-level">LVL {{ adventurer.level }}</span>
+                                        </div>
                                     </div>
                                 </div>
+                            </a>
+                            {% endfor %}
+                        {% else %}
+                            <div style="grid-column: 1 / -1; text-align: center; color: #9ca3af; padding: 40px;">
+                                <div style="font-size: 48px; margin-bottom: 16px;">🔍</div>
+                                <div style="font-family: 'Press Start 2P', monospace; font-size: 12px; margin-bottom: 8px;">No Adventurers Available</div>
+                                <div style="font-size: 14px;">All adventurers in your session have been recruited. Check back later for new candidates!</div>
                             </div>
-                        </a>
-
-                        <!-- Sample Adventurer 2 -->
-                        <a href="/adventurer/2" class="adventurer-card">
-                            <div class="compact-header">
-                                <div class="compact-avatar">🏹</div>
-                                <div class="compact-info">
-                                    <h3 class="compact-name">Lyra Swiftshot</h3>
-                                    <div class="compact-details">
-                                        <span class="compact-class">Archer</span>
-                                        <span>•</span>
-                                        <span class="compact-level">LVL 12</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </a>
-
-                        <!-- Sample Adventurer 3 -->
-                        <a href="/adventurer/3" class="adventurer-card">
-                            <div class="compact-header">
-                                <div class="compact-avatar">✨</div>
-                                <div class="compact-info">
-                                    <h3 class="compact-name">Theron Lightbringer</h3>
-                                    <div class="compact-details">
-                                        <span class="compact-class">Cleric</span>
-                                        <span>•</span>
-                                        <span class="compact-level">LVL 8</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </a>
+                        {% endif %}
                     </div>
                 </div>
             </div>

@@ -1,0 +1,23 @@
+<!-- Top Navigation Bar -->
+<nav class="top-nav">
+    <div class="nav-left">
+        <div class="brand-section">
+            <a href="/" style="display: flex; align-items: center; gap: 8px; text-decoration: none; color: inherit;">
+                <div class="logo">🏰</div>
+                <div class="brand-name">GuildedIn</div>
+            </a>
+        </div>
+        <div class="calendar-display">
+            <span class="game-date">{{ game_session.game_date_display }}</span>
+            <span class="game-phase">{{ page_title | default("Game Phase") }}</span>
+        </div>
+    </div>
+    <div class="nav-actions">
+        {% if back_url %}
+        <a href="{{ back_url }}" class="back-btn">← {{ back_text | default("Back") }}</a>
+        {% endif %}
+        {% if game_session.should_show_activity_feed %}
+        <a href="/dashboard" class="back-btn">← Back to Dashboard</a>
+        {% endif %}
+    </div>
+</nav>
